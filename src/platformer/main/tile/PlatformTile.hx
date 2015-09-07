@@ -6,6 +6,7 @@ import platformer.main.element.GameElement;
 import platformer.main.utils.IGrid;
 import platformer.main.utils.TileDataType;
 import platformer.pxlSq.Utils;
+import flambe.animation.AnimatedFloat;
 
 /**
  * ...
@@ -16,16 +17,24 @@ class PlatformTile extends GameElement implements IGrid
 	public var idx(default, null): Int;
 	public var idy(default, null): Int;
 	
+	public var width(default, null): AnimatedFloat;
+	public var height(default, null): AnimatedFloat;
+	
 	private var tileTexture: Texture;
 	private var tileImage: ImageSprite;
 	
 	public function new(texture: Texture) {
+		this.width = new AnimatedFloat(0.0);
+		this.height = new AnimatedFloat(0.0);
 		this.tileTexture = texture;
 		super();
 	}
 	
 	override public function Init():Void {
 		super.Init();
+		
+		if (tileTexture == null)
+			return;
 		
 		tileImage = new ImageSprite(tileTexture);
 		tileImage.centerAnchor();
@@ -38,11 +47,19 @@ class PlatformTile extends GameElement implements IGrid
 	}
 	
 	override public function GetNaturalWidth(): Float {
-		return tileImage.getNaturalWidth();
+		return (tileImage != null) ? tileImage.getNaturalWidth() : width._;
 	}
 	
 	override public function GetNaturalHeight(): Float {
-		return tileImage.getNaturalHeight();
+		return (tileImage != null) ? tileImage.getNaturalHeight() : height._;
+	}
+	
+	public function SetWidth(width: Float): Void {
+		this.width._ = width;
+	}
+	
+	public function SetHeight(height: Float): Void {
+		this.height._ = height;
 	}
 	
 	override public function onUpdate(dt:Float) {

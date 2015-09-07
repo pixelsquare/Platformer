@@ -51,33 +51,6 @@ class MainScreen extends GameScreen
 			(System.stage.height / background.getNaturalHeight()) / 2 + (GameConstants.GAME_HEIGHT / background.getNaturalHeight()) / 2
 		);
 		AddToEntity(background);
-	
-		//var lib = new Library(gameAsset, "PlatformerAssets/monster");
-		//var movieEntity: Entity = new Entity();
-		//var moviePlayer: MoviePlayer = new MoviePlayer(lib).loop("idle");
-		//movieEntity.add(moviePlayer);
-		//movieEntity.add(new Sprite().setXY(System.stage.width / 2, System.stage.height / 2));
-		//screenEntity.addChild(movieEntity);
-		
-		//var lib = new Library(gameAsset, "PlatformerAssets/heroAnim");
-		//var movieEntity: Entity = new Entity();
-		//var moviePlayer: MoviePlayer = new MoviePlayer(lib).loop("hero_dash");
-		//movieEntity.add(moviePlayer);
-		//movieEntity.add(new Sprite().setXY(System.stage.width / 2, System.stage.height / 2));
-		//screenEntity.addChild(movieEntity);
-		
-		//var lib1 = new Library(gameAsset, "PlatformerAssets/heroAnim");
-		//var movieEntity1: Entity = new Entity();
-		//var moviePlayer1: MoviePlayer = new MoviePlayer(lib).loop("hero_idle");
-		//movieEntity1.add(moviePlayer1);
-		//movieEntity1.add(new Sprite().setXY(System.stage.width * 0.4, System.stage.height / 2));
-		//screenEntity.addChild(movieEntity1);
-		
-		//var image: Texture = gameAsset.getTexture(AssetName.ASSET_TILES).subTexture(240, 81, 40, 40);
-		//var imageSprite: ImageSprite = new ImageSprite(image);
-		//imageSprite.centerAnchor();
-		//imageSprite.setXY(System.stage.width / 2, System.stage.height / 2);
-		//AddToEntity(imageSprite);
 		
 		var platformMain: PlatformerMain = new PlatformerMain(this);
 		AddToEntity(platformMain);

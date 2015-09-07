@@ -11,6 +11,8 @@ import flambe.math.Rectangle;
 import flambe.swf.Format;
 import flambe.util.Promise;
 import platformer.core.DataManager;
+import platformer.main.hero.PlatformHero;
+import platformer.main.hero.PlatformHeroControl;
 import platformer.main.tile.PlatformBlock;
 import platformer.main.tile.PlatformDoor;
 import platformer.main.tile.PlatformObstacle;
@@ -46,11 +48,11 @@ class PlatformerMain extends Component
 	public var streamingPack(default, null): AssetPack;
 	
 	public var curRoomIndx(default, null): Int;
-	public var tiles(default, null): Map<TileType, Texture>;
+	public var tileList(default, null): Map<TileType, Texture>;
+	public var tileGrid(default, null): Array<Array<PlatformTile>>;
 	
 	private var roomFormat: RoomFormat;
 	private var gameAsset: AssetPack;
-	private var gameTiles: Array<Array<PlatformTile>>;
 	
 	private static inline var STREAMING_PATH: String = "streamingassets";
 	private static inline var ROOM_DATA_PATH: String = "roomdata/RoomData_";
@@ -61,8 +63,8 @@ class PlatformerMain extends Component
 		this.gameAsset = dataManager.gameAsset;
 		
 		curRoomIndx = 1;
-		tiles = new Map<TileType, Texture>();
-		gameTiles = new Array<Array<PlatformTile>>();
+		tileList = new Map<TileType, Texture>();
+		tileGrid = new Array<Array<PlatformTile>>();
 		
 		LoadData();
 	}
@@ -77,7 +79,7 @@ class PlatformerMain extends Component
 		var tileJson: TileFormat = Json.parse(file.toString());
 		
 		for (i in 0...tileJson.TILE_DATA.length) {
-			tiles.set(Type.allEnums(TileType)[i + 1], tileTexture.subTexture(
+			tileList.set(Type.allEnums(TileType)[i + 1], tileTexture.subTexture(
 				tileJson.TILE_DATA[i][0],
 				tileJson.TILE_DATA[i][1],
 				tileJson.TILE_DATA[i][2],
@@ -85,17 +87,17 @@ class PlatformerMain extends Component
 			));
 		}
 		
-		tiles.set(TileType.SPIKE_UP, gameAsset.getTexture(AssetName.ASSET_SPIKE_UP));
-		tiles.set(TileType.SPIKE_DOWN, gameAsset.getTexture(AssetName.ASSET_SPIKE_DOWN));
-		tiles.set(TileType.DOOR_IN, gameAsset.getTexture(AssetName.ASSET_DOOR_CLOSE));
-		tiles.set(TileType.DOOR_OUT, gameAsset.getTexture(AssetName.ASSET_DOOR_OPEN));
+		tileList.set(TileType.SPIKE_UP, gameAsset.getTexture(AssetName.ASSET_SPIKE_UP));
+		tileList.set(TileType.SPIKE_DOWN, gameAsset.getTexture(AssetName.ASSET_SPIKE_DOWN));
+		tileList.set(TileType.DOOR_IN, gameAsset.getTexture(AssetName.ASSET_DOOR_CLOSE));
+		tileList.set(TileType.DOOR_OUT, gameAsset.getTexture(AssetName.ASSET_DOOR_OPEN));
 		
-		tiles.set(TileType.BLOCK_120x120, tileTexture.subTexture(0, 0, 120, 120));
-		tiles.set(TileType.BLOCK_1_80x80, tileTexture.subTexture(120, 0, 80, 80));
-		tiles.set(TileType.BLOCK_2_80x80, tileTexture.subTexture(200, 0, 80, 80));
-		tiles.set(TileType.BLOCK_120x40, tileTexture.subTexture(121, 81, 120, 40));
-		tiles.set(TileType.BLOCK_40x120, tileTexture.subTexture(280, 0, 40, 120));
-		tiles.set(TileType.BLOCK_40x80, tileTexture.subTexture(280, 0, 40, 80));
+		tileList.set(TileType.BLOCK_120x120, tileTexture.subTexture(0, 0, 120, 120));
+		tileList.set(TileType.BLOCK_1_80x80, tileTexture.subTexture(120, 0, 80, 80));
+		tileList.set(TileType.BLOCK_2_80x80, tileTexture.subTexture(200, 0, 80, 80));
+		tileList.set(TileType.BLOCK_120x40, tileTexture.subTexture(121, 81, 120, 40));
+		tileList.set(TileType.BLOCK_40x120, tileTexture.subTexture(280, 0, 40, 120));
+		tileList.set(TileType.BLOCK_40x80, tileTexture.subTexture(280, 0, 40, 80));
 	}
 	
 	public function LoadData(): Void {
@@ -117,6 +119,17 @@ class PlatformerMain extends Component
 		ClearStage();
 		LoadRoom();
 		CreateRoom();
+		
+		var heroEntity: Entity = new Entity()
+			.add(new PlatformHero().SetXY(
+				tileGrid[1][15].x._,
+				tileGrid[1][15].y._
+			).SetParent(owner))
+			.add(new PlatformHeroControl(this));
+			
+		owner.addChild(heroEntity);
+		
+		//Utils.ConsoleLog(tileGrid[7][15].GetTileDataType() + "");
 	}
 	
 	public function LoadRoom(): Void {
@@ -137,10 +150,13 @@ class PlatformerMain extends Component
 				var roomDataVal: Int = roomData[jj][ii];
 				
 				var indx: Int = Std.int(Math.abs(roomDataVal));
-				var tileTexture: Texture = tiles.get(Type.allEnums(TileType)[indx]);
-				var tile: PlatformTile = null;
+				var tileTexture: Texture = tileList.get(Type.allEnums(TileType)[indx]);
+				var tile: PlatformTile = new PlatformTile(null);
+				tile.SetWidth(GameConstants.TILE_WIDTH);
+				tile.SetHeight(GameConstants.TILE_HEIGHT);
+				tile.SetGridID(ii, jj);
 				
-				if(roomData[jj][ii] > 0) {
+				if(roomDataVal > 0) {
 					if (Type.allEnums(TileType)[roomDataVal] == TileType.SPIKE_UP || Type.allEnums(TileType)[roomDataVal] == TileType.SPIKE_DOWN) {
 						tile = new PlatformObstacle(tileTexture);
 					}
@@ -150,8 +166,6 @@ class PlatformerMain extends Component
 					else {
 						tile = new PlatformBlock(tileTexture);
 					}
-					
-					tile.SetGridID(ii, jj);
 					
 					var wLen: Float = tile.GetNaturalWidth() / GameConstants.TILE_WIDTH;
 					var hLen: Float = tile.GetNaturalHeight() / GameConstants.TILE_HEIGHT;
@@ -176,20 +190,27 @@ class PlatformerMain extends Component
 						);
 					}
 					
-					var append: Bool = roomData[jj][ii] > 0;
+					var append: Bool = roomDataVal > 0;
 					owner.addChild(new Entity().add(tile), append);
 				}
+				else {
+					tile.SetXY(
+						ii * GameConstants.TILE_WIDTH + (tile.GetNaturalWidth() / 2), 
+						jj * GameConstants.TILE_HEIGHT + (tile.GetNaturalHeight() / 2)
+					);
+				}
 				
+				//Utils.ConsoleLog(ii + " " + jj + " " + tile.GetTileDataType());
 				tileArray.push(tile);
 			}
 			
-			gameTiles.push(tileArray);
+			tileGrid.push(tileArray);
 		}
 	}
 	
 	public function ClearStage(): Void {
-		for (i in 0...gameTiles.length) {
-			for (tile in gameTiles[i]) {
+		for (i in 0...tileGrid.length) {
+			for (tile in tileGrid[i]) {
 				if (tile == null)
 					continue;
 			
