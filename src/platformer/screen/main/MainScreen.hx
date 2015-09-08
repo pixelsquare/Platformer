@@ -1,30 +1,24 @@
 package platformer.screen.main;
 
 import flambe.asset.AssetPack;
-import flambe.display.Font;
 import flambe.display.ImageSprite;
-import flambe.display.Sprite;
 import flambe.display.TextSprite;
-import flambe.display.Texture;
 import flambe.Entity;
 import flambe.input.Key;
 import flambe.input.KeyboardEvent;
 import flambe.subsystem.StorageSystem;
-import flambe.swf.Library;
-import flambe.swf.MoviePlayer;
-import flambe.swf.MovieSprite;
-import flambe.swf.MovieSymbol.MovieKeyframe;
 import flambe.System;
-import platformer.main.PlatformerMain;
-import platformer.main.utils.GameConstants;
+import flambe.util.Promise;
+import flambe.asset.Manifest;
+import platformer.main.PlatformMain;
 
 import platformer.core.SceneManager;
+import platformer.main.utils.GameConstants;
 import platformer.name.AssetName;
-import platformer.name.FontName;
 import platformer.name.ScreenName;
-import platformer.pxlSq.Utils;
 import platformer.screen.GameButton;
 import platformer.screen.GameScreen;
+import platformer.pxlSq.Utils;
 
 /**
  * ...
@@ -34,6 +28,8 @@ class MainScreen extends GameScreen
 {
 	private var gamePauseBtn: GameButton;
 	private var scoreText: TextSprite;
+	
+	private static inline var STREAMING_ASSET_PACK: String = "streamingassets";
 	
 	public function new(assetPack: AssetPack, storage: StorageSystem) {		
 		super(assetPack, storage);
@@ -52,8 +48,11 @@ class MainScreen extends GameScreen
 		);
 		AddToEntity(background);
 		
-		var platformMain: PlatformerMain = new PlatformerMain(this);
-		AddToEntity(platformMain);
+		var promise: Promise<AssetPack> = System.loadAssetPack(Manifest.fromAssets(STREAMING_ASSET_PACK));
+		promise.get(function(streamingAsset: AssetPack) {
+			var platformMain: PlatformMain = new PlatformMain(this, streamingAsset);
+			screenEntity.add(platformMain);
+		});
 		
 		//#if html
 		System.keyboard.up.connect(function(event: KeyboardEvent) {
@@ -63,10 +62,6 @@ class MainScreen extends GameScreen
 			
 			if (event.key == Key.G) {
 				SceneManager.ShowGameOverScreen();
-			}
-			
-			if (event.key == Key.Space) {
-				trace("Hello World!");
 			}
 		});
 		//#end

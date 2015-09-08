@@ -2,7 +2,6 @@ package platformer;
 
 import flambe.asset.AssetPack;
 import flambe.asset.Manifest;
-import flambe.display.Texture;
 import flambe.scene.Director;
 import flambe.System;
 import flambe.util.Promise;

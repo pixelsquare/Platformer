@@ -1,13 +1,11 @@
 package platformer.main.hero;
 
 import flambe.asset.AssetPack;
-import flambe.display.FillSprite;
 import flambe.display.Sprite;
-import flambe.Entity;
 import flambe.swf.Library;
 import flambe.swf.MoviePlayer;
 import platformer.main.element.GameElement;
-import platformer.main.PlatformerMain;
+import platformer.main.utils.IGrid;
 import platformer.main.utils.GameConstants;
 import platformer.pxlSq.Utils;
 
@@ -15,22 +13,57 @@ import platformer.pxlSq.Utils;
  * ...
  * @author Anthony Ganzon
  */
-class PlatformHero extends GameElement
+class PlatformHero extends GameElement implements IGrid
 {
-	private var library: Library;
-	private var moviePlayer: MoviePlayer;
-	private var heroSprite: Sprite;
+	public var idx(default, null): Int;
+	public var idy(default, null): Int;
+	public var heroLayer(default, null): Int;
 	
-	public function new() {
+	private var heroSprite: Sprite;
+	private var heroLibrary: Library;
+	private var heroMoviePlayer: MoviePlayer;
+	
+	private var gameAsset: AssetPack;
+	
+	private static inline var HERO_ANIM_IDLE: String = "hero_idle";
+	private static inline var HERO_ANIM_RUN: String = "hero_dash";
+	private static inline var HERO_ANIM_PATH: String = "platformerassets/heroanim";
+	
+	public function new(gameAsset: AssetPack) {
+		this.gameAsset = gameAsset;
+		this.heroLayer = 1;
 		super();
 	}
 	
-	override public function Init():Void {
-		super.Init();
+	public function UpdateGridPosition(): Void {
+		var tileIdx: Int = Std.int(Math.floor(heroSprite.x._ / GameConstants.TILE_WIDTH));
+		var tileIdy: Int = Std.int(Math.floor(heroSprite.y._ / GameConstants.TILE_HEIGHT));
+		SetGridID(tileIdx, tileIdy);
 	}
 	
-	override public function Draw():Void {
+	public function SetHeroLayer(layer: Int): Void {
+		this.heroLayer = layer;
+	}
+	
+	public function SetAnimationDirty(isRunning: Bool): Void {
+		if(heroMoviePlayer.looping) {
+			heroMoviePlayer.loop(isRunning ? HERO_ANIM_RUN : HERO_ANIM_IDLE, false);
+		}
+	}
+	
+	override public function Init(): Void {
+		super.Init();
+		
+		heroLibrary = new Library(gameAsset, HERO_ANIM_PATH);
+		heroMoviePlayer = new MoviePlayer(heroLibrary);
+		heroMoviePlayer.loop(HERO_ANIM_IDLE);
+	}
+	
+	override public function Draw(): Void {
 		super.Draw();
+		
+		elementEntity.add(heroMoviePlayer);
+		elementEntity.add(heroSprite = new Sprite());
 	}
 	
 	override public function GetNaturalWidth():Float {
@@ -41,25 +74,27 @@ class PlatformHero extends GameElement
 		return heroSprite.getNaturalHeight();
 	}
 	
-	override public function onAdded() {
-		super.onAdded();
-		var platformerMain: PlatformerMain = parent.get(PlatformerMain);
-		var assetPack: AssetPack = platformerMain.dataManager.gameAsset;
-		
-		library = new Library(assetPack, "platformerassets/heroanim");
-		moviePlayer = new MoviePlayer(library).loop("hero_idle");
-		elementEntity.add(moviePlayer);
-		elementEntity.add(heroSprite = new Sprite());
-	}
-	
 	override public function onUpdate(dt:Float) {
 		super.onUpdate(dt);
+		
 		if (heroSprite != null) {
 			heroSprite.setAlpha(alpha._);
 			heroSprite.setXY(x._, y._);
 			heroSprite.setScale(scale._);
 			heroSprite.setScaleXY(scaleX._, scaleY._);
+			
+			UpdateGridPosition();
 		}
 	}
 	
+	/* INTERFACE platformer.main.utils.IGrid */
+	
+	public function SetGridID(idx:Int, idy:Int, updatePosition:Bool = false): Void {
+		this.idx = idx;
+		this.idy = idy;
+	}
+	
+	public function GridIDToString(): String {
+		return "Grid [" + this.idx + "," + this.idy + "]";
+	}
 }

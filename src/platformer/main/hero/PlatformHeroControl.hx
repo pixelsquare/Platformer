@@ -1,19 +1,16 @@
 package platformer.main.hero;
 
+import flambe.asset.AssetPack;
 import flambe.Component;
 import flambe.display.Sprite;
+import flambe.input.Key;
 import flambe.input.KeyboardEvent;
 import flambe.math.Point;
 import flambe.System;
-import flambe.input.Key;
-import platformer.main.PlatformerMain;
-import platformer.main.utils.HeroControlDirection;
+
+import platformer.main.hero.utils.HeroDirection;
 import platformer.pxlSq.Utils;
 import platformer.main.utils.GameConstants;
-import platformer.main.tile.PlatformTile;
-import platformer.main.utils.TileDataType;
-import flambe.swf.MoviePlayer;
-import flambe.math.FMath;
 
 /**
  * ...
@@ -21,71 +18,91 @@ import flambe.math.FMath;
  */
 class PlatformHeroControl extends Component
 {
-	public var isRunning(default, null): Bool;
+	public var heroDirection(default, null): HeroDirection;
+	public var isHeroRunning(default, null): Bool;
+	public var isHeroGrounded(default, null): Bool;
+	public var isHeroOnAir(default, null): Bool;
 	
-	private var heroSprite: PlatformHero;
-	private var heroDirection: HeroControlDirection;
+	private var heroVelocity: Point;
+	private var heroAcceleration: Point;
 	
-	private var platformMain: PlatformerMain;
-	private var tileGrid: Array<Array<PlatformTile>>;
+	private var didJump: Bool;
+	private var jumpForce: Float;
 	
-	private var gravity: Float = -9.8;
-	private var acceleration: Point = new Point();
-	private var velocity: Point = new Point();
+	private static inline var UNIT_GRAVITY: Float = 9.8;
+	private static inline var INITIAL_JUMP_FORCE: Float = 50;
 	
-	private var jump: Float = 200;
-	private var onAir: Bool;
+	public function new () { 
+		this.heroDirection = HeroDirection.NONE;
+		this.isHeroRunning = false;
+		this.isHeroGrounded = false;
+		this.isHeroOnAir = false;
+		
+		this.heroVelocity = new Point();
+		this.heroAcceleration = new Point();
+		
+		this.didJump = false;
+		this.jumpForce = INITIAL_JUMP_FORCE;
+	}
 	
-	private var isGrounded: Bool;
+	public function SetIsGrounded(isGrounded: Bool): Void {
+		this.isHeroGrounded = isGrounded;
+		this.isHeroOnAir = !isGrounded;
+	}
 	
-	public function new (platformMain: PlatformerMain) { 
-		this.platformMain = platformMain;
-		this.tileGrid = platformMain.tileGrid;
-		acceleration = new Point(0, (gravity * 500));
+	public function SetHeroVelocity(velocity: Point): Void {
+		this.heroVelocity = velocity;
+	}
+	
+	public function HasAnyKeyDown(): Bool {
+		return System.keyboard.isDown(Key.W) || System.keyboard.isDown(Key.A) ||
+			System.keyboard.isDown(Key.S) || System.keyboard.isDown(Key.D);
+	}
+	
+	public function ResetJump(): Void {
+		didJump = false;
+		jumpForce = INITIAL_JUMP_FORCE;
 	}
 	
 	override public function onAdded() {
 		super.onAdded();
-		heroSprite = owner.get(PlatformHero);
+		
+		heroAcceleration = new Point(0, -UNIT_GRAVITY);
 		
 		System.keyboard.down.connect(function(event: KeyboardEvent) {
 			if (event.key == Key.W) {
-				heroDirection = HeroControlDirection.UP;
+				heroDirection = HeroDirection.UP;
 			}
 			
 			if (event.key == Key.A) {
-				heroDirection = HeroControlDirection.LEFT;
+				heroDirection = HeroDirection.LEFT;
 			}
 			
 			if (event.key == Key.S) {
-				heroDirection = HeroControlDirection.DOWN;
+				heroDirection = HeroDirection.DOWN;
 			}
 			
 			if (event.key == Key.D) {
-				heroDirection = HeroControlDirection.RIGHT;
+				heroDirection = HeroDirection.RIGHT;
 			}
 			
 			if (event.key == Key.Space) {
-				if (!isGrounded)
+				if (!isHeroGrounded)
 					return;
 				
-				//velocity = new Point(0, -900);
-				isGrounded = false;
-				onAir = true;
+				didJump = true;
+				isHeroGrounded = false;
+				isHeroOnAir = true;
 			}
 		});
 		
 		System.keyboard.up.connect(function(event: KeyboardEvent) {
-			var hasAnyKeyDown: Bool = System.keyboard.isDown(Key.W) || System.keyboard.isDown(Key.A) ||
-				System.keyboard.isDown(Key.S) || System.keyboard.isDown(Key.D);
-
-			if (!hasAnyKeyDown)	{
-				heroDirection = HeroControlDirection.NONE;
+			if (!HasAnyKeyDown()) {
+				heroDirection = HeroDirection.NONE;
 			}
 			
-			if (event.key == Key.Space && onAir) {
-				onAir = false;
-				jump = 200;
+			if (event.key == Key.Space && didJump) {
+				ResetJump();
 			}
 		});
 	}
@@ -93,86 +110,37 @@ class PlatformHeroControl extends Component
 	override public function onUpdate(dt:Float) {
 		super.onUpdate(dt);
 		
-		isRunning = false;
-		isGrounded = false;
+		var platformHero: PlatformHero = owner.get(PlatformHero);
+
+		isHeroRunning = false;
+		isHeroGrounded = false;
 		
-		if (onAir) {
-			jump += 150;
-			velocity = new Point(0, -jump);
-			if (jump >= 700) {
-				onAir = false;
-				jump = 200;
+		if (didJump) {
+			jumpForce += 10;
+			SetHeroVelocity(new Point(0, -jumpForce));
+			
+			if (jumpForce >= 100) {
+				ResetJump();
 			}
 		}
 		
-		velocity.x += (acceleration.x * 0.2) * dt;
-		heroSprite.x._ += (velocity.x * 0.2) * dt;
-		
-		if(!isGrounded) {
-			velocity.y -= (acceleration.y * 0.2) * dt;		
-			heroSprite.y._ += (velocity.y * 0.2) * dt;
+		if (!isHeroGrounded) {
+			heroVelocity.y -= heroAcceleration.y;
+			platformHero.y._ += heroVelocity.y * dt;	
 		}
 		
-		//if (heroDirection == HeroControlDirection.UP) {
-			//heroSprite.y._ -= GameConstants.HERO_SPEED * dt;
-		//}
-		if (heroDirection == HeroControlDirection.LEFT) {
-			heroSprite.x._ -= GameConstants.HERO_SPEED * dt;
-			heroSprite.scaleX._ = -1;
-			isRunning = true;
-		}
-		//if (heroDirection == HeroControlDirection.DOWN) {
-			//heroSprite.y._ += GameConstants.HERO_SPEED * dt;
-		//}
-		if (heroDirection == HeroControlDirection.RIGHT) {
-			heroSprite.x._ += GameConstants.HERO_SPEED * dt;
-			heroSprite.scaleX._ = 1;
-			isRunning = true;
+		if (heroDirection == HeroDirection.LEFT) {
+			platformHero.x._ -= GameConstants.HERO_SPEED * dt;
+			platformHero.scaleX._ = -Math.abs(platformHero.scaleX._);
+			isHeroRunning = true;
 		}
 		
-		var baseRow = Math.floor(heroSprite.x._ / GameConstants.TILE_WIDTH);
-		var baseCol = Math.floor(heroSprite.y._ / GameConstants.TILE_HEIGHT);
-		var rowOverlap = heroSprite.x._ % GameConstants.TILE_WIDTH;
-		var colOverlap = heroSprite.y._ % GameConstants.TILE_HEIGHT;
-		
-		//Utils.ConsoleLog(baseCol + " " + baseRow + " " + colOverlap + " " + rowOverlap);
-		//var tileGrid: Array<Array<PlatformTile>> = platformMain.tileGrid;
-		//if ((tileGrid[baseRow][baseCol + 1] && !tileGrid[baseRow][baseCol]) || (tileGrid[baseRow + 1][baseCol + 1] && !tileGrid[baseRow + 1][baseCol] && rowOverlap)) {
-			//heroSprite.x._ = baseCol * GameConstants.TILE_WIDTH;
-		//}
-		
-		//if (heroDirection == HeroControlDirection.RIGHT) {
-			//Utils.ConsoleLog(baseRow + " " + baseCol + " " + rowOverlap + " " + colOverlap + " " + tileGrid[baseRow + 1][baseCol].GetTileDataType());
-			if (tileGrid[baseRow + 1][baseCol].GetTileDataType() != TileDataType.NONE && heroSprite.x._ >= (baseRow * GameConstants.TILE_WIDTH) + 20) {
-				heroSprite.x._ = (baseRow * GameConstants.TILE_WIDTH) + 20;
-			}
-		//}
-		
-		//if (heroDirection == HeroControlDirection.LEFT) {
-			if (tileGrid[baseRow - 1][baseCol].GetTileDataType() != TileDataType.NONE && heroSprite.x._ <= ((baseRow + 1) * GameConstants.TILE_WIDTH) - 20) {
-				heroSprite.x._ = ((baseRow + 1) * GameConstants.TILE_WIDTH) - 20;
-			}
-		//}
-		
-		//if (heroDirection == HeroControlDirection.UP) {
-			if (tileGrid[baseRow][baseCol - 1].GetTileDataType() != TileDataType.NONE && heroSprite.y._ <= ((baseCol + 1) * GameConstants.TILE_HEIGHT) - 20) {
-				heroSprite.y._ = ((baseCol + 1) * GameConstants.TILE_HEIGHT) - 20;
-			}
-		//}
-		
-		//if (heroDirection == HeroControlDirection.DOWN) {
-			if (tileGrid[baseRow][baseCol + 1].GetTileDataType() != TileDataType.NONE && heroSprite.y._ >= (baseCol * GameConstants.TILE_HEIGHT) + 20) {
-				heroSprite.y._ = (baseCol * GameConstants.TILE_HEIGHT) + 20;
-				velocity.y = 0;
-				isGrounded = true;
-			}
-		//}
-		
-		var moviePlayer: MoviePlayer = owner.firstChild.get(MoviePlayer);
-		if (moviePlayer != null) {
-			if(moviePlayer.looping) {
-				moviePlayer.loop(isRunning ? "hero_dash" : "hero_idle", false);
-			}
+		if (heroDirection == HeroDirection.RIGHT) {
+			platformHero.x._ += GameConstants.HERO_SPEED * dt;
+			platformHero.scaleX._ = Math.abs(platformHero.scaleX._);
+			isHeroRunning = true;
 		}
+		
+		platformHero.SetAnimationDirty(isHeroRunning);
 	}
 }

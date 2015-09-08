@@ -1,7 +1,7 @@
 package platformer.main.tile;
 
 import flambe.display.Texture;
-import platformer.main.utils.TileDataType;
+import platformer.main.tile.utils.TileDataType;
 
 /**
  * ...
@@ -14,7 +14,8 @@ class PlatformDoor extends PlatformTile
 		super(texture);
 	}
 	
-	override public function GetTileDataType():TileDataType {
+	override public function GetTileDataType(): TileDataType {
 		return TileDataType.DOOR;
 	}
+	
 }

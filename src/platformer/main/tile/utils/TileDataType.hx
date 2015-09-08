@@ -1,4 +1,4 @@
-package platformer.main.utils;
+package platformer.main.tile.utils;
 
 /**
  * @author Anthony Ganzon
