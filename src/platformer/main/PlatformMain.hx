@@ -150,7 +150,7 @@ class PlatformMain extends Component
 		
 		var platformHero: PlatformHero = new PlatformHero(gameAsset);
 		platformHero.SetParent(owner);
-		platformHero.SetXY(doorIn.x._ + 40, doorIn.y._ - 80);
+		platformHero.SetXY(doorIn.x._, doorIn.y._);
 		heroEntity.add(platformHero);
 		
 		var platformHeroControl: PlatformHeroControl = new PlatformHeroControl();

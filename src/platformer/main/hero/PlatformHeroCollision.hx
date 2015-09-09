@@ -17,8 +17,11 @@ import platformer.main.hero.utils.HeroDirection;
  */
 class PlatformHeroCollision extends Component
 {
-
-	public function new() {	}
+	private var collisionLayer: Int;
+	
+	public function new() {	
+		this.collisionLayer = 0;
+	}
 	
 	public function HitFlags(tile: PlatformTile): Bool {
 		return tile.GetTileDataType() == TileDataType.BLOCK ||
@@ -48,74 +51,70 @@ class PlatformHeroCollision extends Component
 			return;
 			
 		var tileGrid: Array<Array<PlatformTile>> = platformMain.tileGrid;
-		var bottomTile: PlatformTile = tileGrid[baseRow][baseCol + 1];
 		
-		// Right
-		if (baseRow < (GameConstants.GRID_ROWS - 1)) {
+		var rightOverlap: Bool = platformHero.x._ % GameConstants.TILE_WIDTH >= (GameConstants.TILE_WIDTH / 2);
+		if(baseRow < (GameConstants.GRID_ROWS - 1)) {
 			var rightTile: PlatformTile = tileGrid[baseRow + 1][baseCol];
-			if (rightTile != null) {
-				var ignoreLayer: Bool = heroControl.isHeroGrounded && CompareLayers(rightTile, bottomTile);
-				var collisionFlag: Bool = HitFlags(rightTile) && ignoreLayer;
-				if (collisionFlag && platformHero.x._ >= (baseRow * GameConstants.TILE_WIDTH) + 20) {
-					platformHero.x._ = (baseRow * GameConstants.TILE_WIDTH) + 20;
-				}
-				}
+			var ignoreLayer: Bool = collisionLayer == rightTile.tileLayer;
+			if (HitFlags(rightTile) && rightOverlap && ignoreLayer) {
+				platformHero.x._ = baseRow * GameConstants.TILE_WIDTH + (GameConstants.TILE_WIDTH / 2);
+			}
 		}
 		else {
-			if (platformHero.x._ >= (baseRow * GameConstants.TILE_WIDTH) + 20) {
-				platformHero.x._ = (baseRow * GameConstants.TILE_WIDTH) + 20;
+			// Right Stage corner bounds
+			if (rightOverlap) {
+				platformHero.x._ = baseRow * GameConstants.TILE_WIDTH + (GameConstants.TILE_WIDTH / 2);
 			}
 		}
 		
-		// Left
+		var leftOverlap: Bool = platformHero.x._ % GameConstants.TILE_WIDTH <= (GameConstants.TILE_WIDTH / 2);
 		if(baseRow > 0) {
 			var leftTile: PlatformTile = tileGrid[baseRow - 1][baseCol];
-			if (leftTile != null) {
-				var ignoreLayer: Bool = heroControl.isHeroGrounded && CompareLayers(leftTile, bottomTile);
-				var collisionFlag: Bool = HitFlags(leftTile) && ignoreLayer;
-				if (collisionFlag && platformHero.x._ <= ((baseRow + 1) * GameConstants.TILE_WIDTH) - 20) {
-					platformHero.x._ = (baseRow + 1) * GameConstants.TILE_WIDTH - 20;
-				}
+			var ignoreLayer: Bool = collisionLayer == leftTile.tileLayer;
+			if (HitFlags(leftTile) && leftOverlap && ignoreLayer) {
+				platformHero.x._ = (baseRow + 1) * GameConstants.TILE_WIDTH - (GameConstants.TILE_WIDTH / 2);
 			}
 		}
 		else {
-			if(platformHero.x._ <= ((baseRow + 1) * GameConstants.TILE_WIDTH) - 20) {
-				platformHero.x._ = (baseRow + 1) * GameConstants.TILE_WIDTH - 20;
+			// Left Stage corner bounds
+			if(leftOverlap) {
+				platformHero.x._ = baseRow * GameConstants.TILE_WIDTH + (GameConstants.TILE_WIDTH / 2);
 			}
 		}
 		
-		// Top
+		var topOverlap: Bool = platformHero.y._ % GameConstants.TILE_HEIGHT <= (GameConstants.TILE_HEIGHT / 2);
 		if(baseCol > 0) {
 			var topTile: PlatformTile = tileGrid[baseRow][baseCol - 1];
-			if(topTile != null) {
-				if (HitFlags(topTile) && platformHero.y._ <= ((baseCol + 1) * GameConstants.TILE_HEIGHT) - 20) {
-					platformHero.y._ = ((baseCol + 1) * GameConstants.TILE_HEIGHT) - 20;
+			var ignoreLayer: Bool = collisionLayer == topTile.tileLayer;
+			if (HitFlags(topTile) && topOverlap && ignoreLayer) {
+				platformHero.y._ = (baseCol + 1) * GameConstants.TILE_HEIGHT - (GameConstants.TILE_HEIGHT / 2);
+			}
+		}
+		else {
+			// Top Stage corner bounds
+			if (topOverlap) {
+				platformHero.y._ = (baseCol + 1) * GameConstants.TILE_HEIGHT - (GameConstants.TILE_HEIGHT / 2);
+			}
+		}
+		
+		var bottomOverlap: Bool = platformHero.y._ % GameConstants.TILE_HEIGHT >= (GameConstants.TILE_HEIGHT / 2);
+		if(baseCol < (GameConstants.GRID_COLS - 1)) {
+			var bottomTile: PlatformTile = tileGrid[baseRow][baseCol + 1];
+			var ignoreLayer: Bool = bottomTile.tileLayer >= 1;
+			if (HitFlags(bottomTile) && bottomOverlap && ignoreLayer) {
+				platformHero.y._ = baseCol * GameConstants.TILE_HEIGHT + (GameConstants.TILE_HEIGHT / 2);
+				heroControl.SetHeroVelocity(new Point());
+				heroControl.SetIsGrounded(true);
+				
+				if (heroControl.isHeroGrounded && !heroControl.isHeroOnAir) {
+					collisionLayer = bottomTile.tileLayer;
 				}
 			}
 		}
 		else {
-			if (platformHero.y._ <= ((baseCol + 1) * GameConstants.TILE_HEIGHT) - 20) {
-				platformHero.y._ = ((baseCol + 1) * GameConstants.TILE_HEIGHT) - 20;
-			}
-		}
-			
-		// Bottom
-		if (baseCol < (GameConstants.GRID_COLS - 1)) {
-			if (bottomTile != null) {	
-				// TODO: LAYER COLLISIONs
-				//Utils.ConsoleLog(heroControl.isHeroOnAir + "");
-				//var collisionFlag: Bool = bottomTile.tileLayer == platformHero.heroLayer && !heroControl.isHeroOnAir;
-				if (HitFlags(bottomTile) && platformHero.y._ >= (baseCol * GameConstants.TILE_HEIGHT) + 20) {
-					platformHero.y._ = (baseCol * GameConstants.TILE_HEIGHT) + 20;
-					heroControl.SetHeroVelocity(new Point());
-					heroControl.SetIsGrounded(true);
-					platformHero.SetHeroLayer(bottomTile.tileLayer);
-				}
-			}
-		}
-		else {
-			if (platformHero.y._ >= (baseCol * GameConstants.TILE_HEIGHT) + 20) {
-				platformHero.y._ = (baseCol * GameConstants.TILE_HEIGHT) + 20;
+			// Bottom Stage corner bounds
+			if (bottomOverlap) {
+				platformHero.y._ = baseCol * GameConstants.TILE_HEIGHT + (GameConstants.TILE_HEIGHT / 2);
 			}
 		}
 	}

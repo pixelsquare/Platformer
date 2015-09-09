@@ -30,7 +30,7 @@ class PlatformHeroControl extends Component
 	private var jumpForce: Float;
 	
 	private static inline var UNIT_GRAVITY: Float = 9.8;
-	private static inline var INITIAL_JUMP_FORCE: Float = 50;
+	private static inline var INITIAL_JUMP_FORCE: Float = 80;
 	
 	public function new () { 
 		this.heroDirection = HeroDirection.NONE;
@@ -119,7 +119,7 @@ class PlatformHeroControl extends Component
 			jumpForce += 10;
 			SetHeroVelocity(new Point(0, -jumpForce));
 			
-			if (jumpForce >= 100) {
+			if (jumpForce >= 150) {
 				ResetJump();
 			}
 		}
@@ -139,6 +139,14 @@ class PlatformHeroControl extends Component
 			platformHero.x._ += GameConstants.HERO_SPEED * dt;
 			platformHero.scaleX._ = Math.abs(platformHero.scaleX._);
 			isHeroRunning = true;
+		}
+		
+		if (heroDirection == HeroDirection.UP) {
+			platformHero.y._ -= GameConstants.HERO_SPEED * dt;
+		}
+		
+		if (heroDirection == HeroDirection.DOWN) {
+			platformHero.y._ += GameConstants.HERO_SPEED * dt;
 		}
 		
 		platformHero.SetAnimationDirty(isHeroRunning);

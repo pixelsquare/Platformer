@@ -17,7 +17,6 @@ class PlatformHero extends GameElement implements IGrid
 {
 	public var idx(default, null): Int;
 	public var idy(default, null): Int;
-	public var heroLayer(default, null): Int;
 	
 	private var heroSprite: Sprite;
 	private var heroLibrary: Library;
@@ -31,7 +30,6 @@ class PlatformHero extends GameElement implements IGrid
 	
 	public function new(gameAsset: AssetPack) {
 		this.gameAsset = gameAsset;
-		this.heroLayer = 1;
 		super();
 	}
 	
@@ -39,10 +37,6 @@ class PlatformHero extends GameElement implements IGrid
 		var tileIdx: Int = Std.int(Math.floor(heroSprite.x._ / GameConstants.TILE_WIDTH));
 		var tileIdy: Int = Std.int(Math.floor(heroSprite.y._ / GameConstants.TILE_HEIGHT));
 		SetGridID(tileIdx, tileIdy);
-	}
-	
-	public function SetHeroLayer(layer: Int): Void {
-		this.heroLayer = layer;
 	}
 	
 	public function SetAnimationDirty(isRunning: Bool): Void {
@@ -57,13 +51,16 @@ class PlatformHero extends GameElement implements IGrid
 		heroLibrary = new Library(gameAsset, HERO_ANIM_PATH);
 		heroMoviePlayer = new MoviePlayer(heroLibrary);
 		heroMoviePlayer.loop(HERO_ANIM_IDLE);
+		
+		heroSprite = new Sprite();
+		heroSprite.centerAnchor();
 	}
 	
 	override public function Draw(): Void {
 		super.Draw();
 		
 		elementEntity.add(heroMoviePlayer);
-		elementEntity.add(heroSprite = new Sprite());
+		elementEntity.add(heroSprite);
 	}
 	
 	override public function GetNaturalWidth():Float {
