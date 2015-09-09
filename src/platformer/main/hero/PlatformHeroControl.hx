@@ -27,12 +27,12 @@ class PlatformHeroControl extends Component
 	private var heroVelocity: Point;
 	private var heroAcceleration: Point;
 	
-	private var didJump: Bool;
+	//private var didJump: Bool;
 	private var jumpForce: Float;
 	
 	private static inline var UNIT_GRAVITY: Float = 9.8;
-	private static inline var INITIAL_JUMP_FORCE: Float = 80;
-	private static inline var MAX_FALL_VELOCITY: Float = 200;
+	private static inline var INITIAL_JUMP_FORCE: Float = 220;
+	private static inline var MAX_FALL_VELOCITY: Float = 250;
 	
 	public function new () { 
 		this.heroDirection = HeroDirection.NONE;
@@ -43,7 +43,7 @@ class PlatformHeroControl extends Component
 		this.heroVelocity = new Point();
 		this.heroAcceleration = new Point();
 		
-		this.didJump = false;
+		//this.didJump = false;
 		this.jumpForce = INITIAL_JUMP_FORCE;
 	}
 	
@@ -66,7 +66,7 @@ class PlatformHeroControl extends Component
 	}
 	
 	public function ResetJump(): Void {
-		didJump = false;
+		//didJump = false;
 		jumpForce = INITIAL_JUMP_FORCE;
 	}
 	
@@ -91,17 +91,17 @@ class PlatformHeroControl extends Component
 		heroDirection = HeroDirection.NONE;
 		
 		System.keyboard.down.connect(function(event: KeyboardEvent) {
-			if (event.key == Key.W) {
-				heroDirection = HeroDirection.UP;
-			}
+			//if (event.key == Key.W) {
+				//heroDirection = HeroDirection.UP;
+			//}
 			
 			if (event.key == Key.A) {
 				heroDirection = HeroDirection.LEFT;
 			}
 			
-			if (event.key == Key.S) {
-				heroDirection = HeroDirection.DOWN;
-			}
+			//if (event.key == Key.S) {
+				//heroDirection = HeroDirection.DOWN;
+			//}
 			
 			if (event.key == Key.D) {
 				heroDirection = HeroDirection.RIGHT;
@@ -111,7 +111,8 @@ class PlatformHeroControl extends Component
 				if (!isHeroGrounded)
 					return;
 				
-				didJump = true;
+				//didJump = true;
+				SetHeroVelocity(new Point(0, -jumpForce));
 				isHeroGrounded = false;
 				isHeroOnAir = true;
 			}
@@ -122,7 +123,7 @@ class PlatformHeroControl extends Component
 				heroDirection = HeroDirection.NONE;
 			}
 			
-			if (event.key == Key.Space && didJump) {
+			if (event.key == Key.Space) {
 				ResetJump();
 			}
 		});
@@ -136,20 +137,21 @@ class PlatformHeroControl extends Component
 		isHeroRunning = false;
 		isHeroGrounded = false;
 		
-		if (didJump) {
-			jumpForce += 10;
-			SetHeroVelocity(new Point(0, -jumpForce));
-			
-			if (jumpForce >= 150) {
-				ResetJump();
-			}
-		}
+		//if (didJump) {
+			//jumpForce += 20;
+			//SetHeroVelocity(new Point(0, -jumpForce));
+			//
+			//if (jumpForce >= 200) {
+				//ResetJump();
+			//}
+		//}
 		
 		// TODO: Limit velocity of free falling hero
 		if (!isHeroGrounded) {
 			heroVelocity.y -= heroAcceleration.y;
-			//heroVelocity.y = FMath.clamp(heroVelocity.y, 0, MAX_FALL_VELOCITY);
-			platformHero.y._ += heroVelocity.y * dt;	
+			heroVelocity.y = FMath.clamp(heroVelocity.y, -999, MAX_FALL_VELOCITY);
+			platformHero.y._ += heroVelocity.y * dt;
+			isHeroOnAir = true;
 		}
 		
 		if (heroDirection == HeroDirection.LEFT) {

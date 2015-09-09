@@ -11,6 +11,7 @@ import platformer.main.utils.GameConstants;
 import platformer.pxlSq.Utils;
 import platformer.main.tile.utils.TileDataType;
 import platformer.main.hero.utils.HeroDirection;
+import flambe.Disposer;
 
 /**
  * ...
@@ -23,6 +24,8 @@ class PlatformHeroCollision extends Component
 	private var collisionLayer: Int;
 	private var curTile: PlatformTile;
 	private var prevTile: PlatformTile;
+	
+	//private var colHeroDisposer: Disposer;
 	
 	public function new() {	
 		this.onTileChanged = new Signal1<PlatformTile>();
@@ -39,6 +42,15 @@ class PlatformHeroCollision extends Component
 	public function CompareLayers(tileA: PlatformTile, tileB: PlatformTile): Bool {
 		return tileA.tileLayer == tileB.tileLayer;
 	}
+	
+	//override public function onAdded() {
+		//super.onAdded();
+		//colHeroDisposer = owner.get(Disposer);
+		//if (colHeroDisposer == null) {
+			//owner.add(colHeroDisposer = new Disposer());
+		//}
+		//colHeroDisposer.connect1(onTileChanged, function(tile: PlatformTile) { } );
+	//}
 	
 	override public function onUpdate(dt:Float) {
 		super.onUpdate(dt);
@@ -117,11 +129,14 @@ class PlatformHeroCollision extends Component
 			}
 		}
 		
+		// heroYOffset adds an offset to hero's y position
+		// for the feet to touch the ground
+		var heroYOffset: Int = 2;
 		if(baseCol < (GameConstants.GRID_COLS - 1)) {
 			var bottomTile: PlatformTile = tileGrid[baseRow][baseCol + 1];
 			var ignoreLayer: Bool = bottomTile.tileLayer >= 1;
 			if (HitFlags(bottomTile) && bottomOverlap && ignoreLayer) {
-				platformHero.y._ = baseCol * GameConstants.TILE_HEIGHT + (GameConstants.TILE_HEIGHT / 2);
+				platformHero.y._ = baseCol * GameConstants.TILE_HEIGHT + (GameConstants.TILE_HEIGHT / 2) + heroYOffset;
 				heroControl.SetHeroVelocity(new Point());
 				heroControl.SetIsGrounded(true);
 				
@@ -133,8 +148,10 @@ class PlatformHeroCollision extends Component
 		else {
 			// Bottom Stage corner bounds
 			if (bottomOverlap) {
-				platformHero.y._ = baseCol * GameConstants.TILE_HEIGHT + (GameConstants.TILE_HEIGHT / 2);
+				platformHero.y._ = baseCol * GameConstants.TILE_HEIGHT + (GameConstants.TILE_HEIGHT / 2) + heroYOffset;
 			}
 		}
+		
+		//Utils.ConsoleLog(heroControl.isHeroGrounded + " " + heroControl.isHeroOnAir);
 	}
 }

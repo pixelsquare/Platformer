@@ -24,6 +24,8 @@ import platformer.name.FontName;
 import platformer.name.ScreenName;
 import platformer.screen.GameButton;
 import platformer.main.utils.GameConstants;
+import flambe.util.Promise;
+import flambe.asset.Manifest;
 
 import platformer.pxlSq.Utils;
 
@@ -71,8 +73,16 @@ class TitleScreen extends GameScreen
 		AddToEntity(blinkScript);
 		
 		screenDisposer.add(System.keyboard.up.connect(function(event: KeyboardEvent) {
-			if(event.key == Key.Space) {
-				SceneManager.ShowMainScreen(true);
+			if (event.key == Key.Space) {
+				var promise: Promise<AssetPack> = System.loadAssetPack(Manifest.fromAssets(MainScreen.STREAMING_ASSET_PACK));
+				promise.get(function(streamingAsset: AssetPack) {
+					Utils.ConsoleLog("Streaming Asset loaded!");
+					SceneManager.ShowMainScreen();
+					SceneManager.instance.gameMainScreen.InitPlatformMain(streamingAsset);
+					
+				});
+				//SceneManager.ShowMainScreen();
+				SceneManager.ShowScreen(new PreloadScreen(gameAsset, promise));
 			}
 		}));
 		

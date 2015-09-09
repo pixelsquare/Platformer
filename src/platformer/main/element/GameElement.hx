@@ -106,6 +106,10 @@ class GameElement extends Component
 		return this;
 	}
 	
+	public function SetVisibility(visible: Bool): GameElement {
+		return this;
+	}
+	
 	override public function onAdded() {
 		super.onAdded();
 		

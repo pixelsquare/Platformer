@@ -73,6 +73,11 @@ class PlatformTile extends GameElement implements IGrid
 		AddToEntity(tileImage);
 	}
 	
+	override public function SetVisibility(visible:Bool): GameElement {
+		tileImage.visible = visible;
+		return super.SetVisibility(visible);
+	}
+	
 	override public function GetNaturalWidth(): Float {
 		return (tileImage != null) ? tileImage.getNaturalWidth() : width._;
 	}

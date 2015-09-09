@@ -3,8 +3,10 @@ package platformer.main;
 import flambe.asset.AssetPack;
 import flambe.asset.File;
 import flambe.Component;
+import flambe.display.FillSprite;
 import flambe.display.ImageSprite;
 import flambe.display.Texture;
+import flambe.Disposer;
 import flambe.Entity;
 import flambe.input.KeyboardEvent;
 import platformer.format.TileFormat;
@@ -55,6 +57,9 @@ class PlatformMain extends Component
 	private var doorIn: PlatformTile;
 	private var doorOut: PlatformTile;
 	
+	private var screenCurtain: FillSprite;
+	private var platformDisposer: Disposer;
+	
 	private static inline var ROOM_MAX: Int = 5;
 	
 	private static inline var TILE_DATA_PATH: String = "tiledata/TileData";
@@ -71,6 +76,8 @@ class PlatformMain extends Component
 		
 		this.allTiles = new Array<PlatformTile>();
 		this.gameAsset = dataManager.gameAsset;
+		
+		this.screenCurtain = new FillSprite(0x000000, System.stage.width, System.stage.height);
 		
 		InitTileTypes();
 		LoadRoomData(currentRoom);
@@ -147,7 +154,7 @@ class PlatformMain extends Component
 		if (allTiles.length > 0)
 			return;
 		
-		//Utils.ConsoleLog(roomIndx);
+		ResetRoomTiles();
 		LoadRoomData(roomIndx);
 		CreateRoomBackground();
 		CreateRoomBlocks();
@@ -156,6 +163,7 @@ class PlatformMain extends Component
 		SetBlockLayer();
 		
 		CreatePlatformHero();
+		ShowScreenCurtain();
 	}
 	
 	public function CreatePlatformHero(): Void {
@@ -183,7 +191,8 @@ class PlatformMain extends Component
 			}
 			
 			// Restart Level
-			if (tile.idy == (GameConstants.GRID_COLS - 1)) {
+			if (tile.idy == (GameConstants.GRID_COLS - 1) || tile.GetTileDataType() == TileDataType.OBSTACLE) {
+				Utils.ConsoleLog("LOSE! " + tile.GetTileDataType() + " " + tile.GridIDToString());
 				didWin = false;
 				SceneManager.ShowGameOverScreen();
 				//ReloadRoom();
@@ -192,6 +201,16 @@ class PlatformMain extends Component
 		heroEntity.add(platformHeroCollision);
 		
 		owner.addChild(heroEntity);
+	}
+	
+	public function ShowScreenCurtain(): Void {
+		if (screenCurtain == null)
+			return;
+		
+		owner.removeChild(new Entity().add(screenCurtain));
+		owner.addChild(new Entity().add(screenCurtain));
+		
+		screenCurtain.alpha.animate(1, 0, 0.5);
 	}
 	
 	public function CreateRoomTiles(): Void {
@@ -213,6 +232,21 @@ class PlatformMain extends Component
 				tileArray.push(tile);
 			}
 			tileGrid.push(tileArray);
+		}
+	}
+	
+	public function ResetRoomTiles(): Void {
+		for (ii in 0...tileGrid.length) {
+			for (jj in 0...tileGrid[ii].length) {
+				tileGrid[ii][jj] = new PlatformTile(null);
+				tileGrid[ii][jj].SetGridID(ii, jj);
+				tileGrid[ii][jj].SetSize(GameConstants.TILE_WIDTH, GameConstants.TILE_HEIGHT);	
+				
+				tileGrid[ii][jj].SetXY(
+					ii * tileGrid[ii][jj].GetNaturalWidth() + (GameConstants.TILE_WIDTH / 2),
+					jj * tileGrid[ii][jj].GetNaturalHeight() + (GameConstants.TILE_HEIGHT / 2)
+				);
+			}
 		}
 	}
 	
@@ -429,7 +463,12 @@ class PlatformMain extends Component
 		CreateRoomTiles();
 		LoadRoom(currentRoom);
 		
-		System.keyboard.down.connect(function(event: KeyboardEvent) {
+		platformDisposer = owner.get(Disposer);
+		if (platformDisposer == null) {
+			owner.add(platformDisposer = new Disposer());
+		}
+		
+		platformDisposer.add(System.keyboard.down.connect(function(event: KeyboardEvent) {
 			if (event.key == Key.Number1) {
 				LoadRoom(1);
 			}
@@ -454,6 +493,6 @@ class PlatformMain extends Component
 			//if (event.key == Key.Space) {
 				//ClearStage();
 			//}
-		});
+		}));
 	}
 }

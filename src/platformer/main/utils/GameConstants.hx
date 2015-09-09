@@ -19,5 +19,5 @@ class GameConstants
 	
 	public static inline var TWEEN_SPEED: Float = 0.2;
 	
-	public static inline var HERO_SPEED = 80;
+	public static inline var HERO_SPEED = 120;
 }

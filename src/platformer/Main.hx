@@ -10,6 +10,7 @@ import platformer.core.SceneManager;
 import platformer.pxlSq.Utils;
 import platformer.screen.PreloadScreen;
 import platformer.screen.SplashScreen;
+import flambe.util.Assert;
 
 class Main
 {
@@ -35,8 +36,8 @@ class Main
 				sceneManager.InitScreens(mainPack, System.storage);
 				
 				#if flash				
-					//SceneManager.ShowTitleScreen(true);
-					SceneManager.ShowMainScreen(true);
+					SceneManager.ShowTitleScreen(true);
+					//SceneManager.ShowMainScreen(true);
 					//SceneManager.ShowGameOverScreen(true);
 				#else
 					SceneManager.ShowScreen(new SplashScreen(preloadPack, 2), true);

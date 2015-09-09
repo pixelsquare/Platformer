@@ -55,11 +55,12 @@ class GameOverScreen extends GameScreen
 		AddToEntity(spaceToMenu);
 		
 		
-		System.keyboard.up.connect(function(event: KeyboardEvent) {
+		screenDisposer.add(System.keyboard.up.connect(function(event: KeyboardEvent) {
 			if (event.key == Key.Space) {
-				SceneManager.ShowTitleScreen(true);
+				SceneManager.UnwindToCurScene();
+				SceneManager.ShowTitleScreen();
 			}
-		});
+		}));
 		
 		return screenEntity;
 	}

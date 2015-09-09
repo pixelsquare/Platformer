@@ -26,10 +26,12 @@ import platformer.pxlSq.Utils;
  */
 class MainScreen extends GameScreen
 {
+	public var platformMain(default, null): PlatformMain;
+	
 	private var gamePauseBtn: GameButton;
 	private var scoreText: TextSprite;
 	
-	private static inline var STREAMING_ASSET_PACK: String = "streamingassets";
+	public static inline var STREAMING_ASSET_PACK: String = "streamingassets";
 	
 	public function new(assetPack: AssetPack, storage: StorageSystem) {		
 		super(assetPack, storage);
@@ -48,14 +50,14 @@ class MainScreen extends GameScreen
 		);
 		AddToEntity(background);
 		
-		var promise: Promise<AssetPack> = System.loadAssetPack(Manifest.fromAssets(STREAMING_ASSET_PACK));
-		promise.get(function(streamingAsset: AssetPack) {
-			var platformMain: PlatformMain = new PlatformMain(this, streamingAsset);
-			screenEntity.add(platformMain);
-		});
+		//var promise: Promise<AssetPack> = System.loadAssetPack(Manifest.fromAssets(STREAMING_ASSET_PACK));
+		//promise.get(function(streamingAsset: AssetPack) {
+			//Utils.ConsoleLog("Streaming Asset loaded!");
+			//
+		//});
 		
-		//#if html
-		System.keyboard.up.connect(function(event: KeyboardEvent) {
+		#if html
+		screenDisposer.add(System.keyboard.up.connect(function(event: KeyboardEvent) {
 			if (event.key == Key.P) {
 				SceneManager.ShowPauseScreen();
 			}
@@ -63,10 +65,15 @@ class MainScreen extends GameScreen
 			if (event.key == Key.G) {
 				SceneManager.ShowGameOverScreen();
 			}
-		});
-		//#end
+		}));
+		#end
 		
 		return screenEntity;
+	}
+	
+	public function InitPlatformMain(streamingAsset: AssetPack) {
+		platformMain = new PlatformMain(this, streamingAsset);
+		screenEntity.add(platformMain);
 	}
 	
 	override public function GetScreenName(): String {
