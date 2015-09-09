@@ -3,6 +3,8 @@
 	
 	"RoomName": "Room_5",
 	
+	"Hero_Direction": -1,
+	
 	"Background_Data":
 		[
 			[  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0],

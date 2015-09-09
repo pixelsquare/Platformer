@@ -27,6 +27,9 @@ import platformer.format.RoomFormat;
 import platformer.main.tile.PlatformTile;
 import platformer.name.AssetName;
 import platformer.main.utils.GameConstants;
+import platformer.main.tile.utils.TileDataType;
+import platformer.main.hero.utils.HeroDirection;
+import platformer.core.SceneManager;
 
 /**
  * ...
@@ -42,6 +45,7 @@ class PlatformMain extends Component
 	public var tileGrid(default, null): Array<Array<PlatformTile>>;
 	
 	public var heroEntity(default, null): Entity;
+	public var didWin(default, null): Bool;
 	
 	private var allTiles: Array<PlatformTile>;
 	
@@ -118,11 +122,25 @@ class PlatformMain extends Component
 		var curRoomIndx: Int = currentRoom;
 		curRoomIndx++;
 		
-		if (curRoomIndx > ROOM_MAX)
+		if (curRoomIndx > ROOM_MAX) {
+			Utils.ConsoleLog("WIN!");
+			didWin = true;
+			SceneManager.ShowGameOverScreen(true);
 			return;
+		}
 	
 		ClearStage();
 		LoadRoom(curRoomIndx);
+	}
+	
+	public function ReloadRoom(): Void {
+		// Load character only
+		owner.removeChild(heroEntity);
+		CreatePlatformHero();
+		
+		// Load the whole stage
+		//ClearStage();
+		//LoadRoom(currentRoom);
 	}
 	
 	public function LoadRoom(roomIndx: Int = 1): Void {
@@ -154,9 +172,23 @@ class PlatformMain extends Component
 		heroEntity.add(platformHero);
 		
 		var platformHeroControl: PlatformHeroControl = new PlatformHeroControl();
+		platformHeroControl.SetHeroDirection((roomDataJson.Hero_Direction == 1) ? HeroDirection.RIGHT : HeroDirection.LEFT);
 		heroEntity.add(platformHeroControl);
 		
 		var platformHeroCollision: PlatformHeroCollision = new PlatformHeroCollision();
+		platformHeroCollision.onTileChanged.connect(function(tile: PlatformTile) {
+			if (tile.GetTileDataType() == TileDataType.DOOR && tile.tileType == TileType.DOOR_OUT) {
+				Utils.ConsoleLog("EXIT!");
+				LoadNextRoom();
+			}
+			
+			// Restart Level
+			if (tile.idy == (GameConstants.GRID_COLS - 1)) {
+				didWin = false;
+				SceneManager.ShowGameOverScreen();
+				//ReloadRoom();
+			}
+		});
 		heroEntity.add(platformHeroCollision);
 		
 		owner.addChild(heroEntity);
@@ -387,6 +419,8 @@ class PlatformMain extends Component
 		
 		allTiles = new Array<PlatformTile>();
 		roomDataJson = null;
+		
+		owner.removeChild(heroEntity);
 	}
 	
 	override public function onAdded() {
@@ -395,31 +429,31 @@ class PlatformMain extends Component
 		CreateRoomTiles();
 		LoadRoom(currentRoom);
 		
-		//System.keyboard.down.connect(function(event: KeyboardEvent) {
-			//if (event.key == Key.Number1) {
-				//LoadRoom(1);
-			//}
-			//if (event.key == Key.Number2) {
-				//LoadRoom(2);
-			//}
-			//if (event.key == Key.Number3) {
-				//LoadRoom(3);
-			//}
-			//if (event.key == Key.Number4) {
-				//LoadRoom(4);
-			//}
-			//if (event.key == Key.Number5) {
-				//LoadRoom(5);
-			//}
-			//if (event.key == Key.F1) {
-				//LoadPrevRoom();
-			//}
-			//if (event.key == Key.F2) {
-				//LoadNextRoom();
-			//}
+		System.keyboard.down.connect(function(event: KeyboardEvent) {
+			if (event.key == Key.Number1) {
+				LoadRoom(1);
+			}
+			if (event.key == Key.Number2) {
+				LoadRoom(2);
+			}
+			if (event.key == Key.Number3) {
+				LoadRoom(3);
+			}
+			if (event.key == Key.Number4) {
+				LoadRoom(4);
+			}
+			if (event.key == Key.Number5) {
+				LoadRoom(5);
+			}
+			if (event.key == Key.F1) {
+				LoadPrevRoom();
+			}
+			if (event.key == Key.F2) {
+				LoadNextRoom();
+			}
 			//if (event.key == Key.Space) {
 				//ClearStage();
 			//}
-		//});
+		});
 	}
 }

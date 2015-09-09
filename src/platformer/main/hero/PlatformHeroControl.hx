@@ -7,6 +7,7 @@ import flambe.input.Key;
 import flambe.input.KeyboardEvent;
 import flambe.math.Point;
 import flambe.System;
+import flambe.math.FMath;
 
 import platformer.main.hero.utils.HeroDirection;
 import platformer.pxlSq.Utils;
@@ -31,6 +32,7 @@ class PlatformHeroControl extends Component
 	
 	private static inline var UNIT_GRAVITY: Float = 9.8;
 	private static inline var INITIAL_JUMP_FORCE: Float = 80;
+	private static inline var MAX_FALL_VELOCITY: Float = 200;
 	
 	public function new () { 
 		this.heroDirection = HeroDirection.NONE;
@@ -43,6 +45,10 @@ class PlatformHeroControl extends Component
 		
 		this.didJump = false;
 		this.jumpForce = INITIAL_JUMP_FORCE;
+	}
+	
+	public function SetHeroDirection(direction: HeroDirection): Void {
+		this.heroDirection = direction;
 	}
 	
 	public function SetIsGrounded(isGrounded: Bool): Void {
@@ -64,10 +70,25 @@ class PlatformHeroControl extends Component
 		jumpForce = INITIAL_JUMP_FORCE;
 	}
 	
+	// Only avalable when on OnAdded, OnStart and OnUpdate functions
+	// owner entity must not be nulled!
+	public function SetHeroFacingDirty(): Void {
+		var platformHero: PlatformHero = owner.get(PlatformHero);
+		if (heroDirection == HeroDirection.LEFT) {
+			platformHero.scaleX._ = -Math.abs(platformHero.scaleX._);
+		}
+		
+		if (heroDirection == HeroDirection.RIGHT) {
+			platformHero.scaleX._ = Math.abs(platformHero.scaleX._);
+		}
+	}
+	
 	override public function onAdded() {
 		super.onAdded();
 		
 		heroAcceleration = new Point(0, -UNIT_GRAVITY);
+		SetHeroFacingDirty();
+		heroDirection = HeroDirection.NONE;
 		
 		System.keyboard.down.connect(function(event: KeyboardEvent) {
 			if (event.key == Key.W) {
@@ -124,20 +145,22 @@ class PlatformHeroControl extends Component
 			}
 		}
 		
+		// TODO: Limit velocity of free falling hero
 		if (!isHeroGrounded) {
 			heroVelocity.y -= heroAcceleration.y;
+			//heroVelocity.y = FMath.clamp(heroVelocity.y, 0, MAX_FALL_VELOCITY);
 			platformHero.y._ += heroVelocity.y * dt;	
 		}
 		
 		if (heroDirection == HeroDirection.LEFT) {
 			platformHero.x._ -= GameConstants.HERO_SPEED * dt;
-			platformHero.scaleX._ = -Math.abs(platformHero.scaleX._);
+			SetHeroFacingDirty();
 			isHeroRunning = true;
 		}
 		
 		if (heroDirection == HeroDirection.RIGHT) {
 			platformHero.x._ += GameConstants.HERO_SPEED * dt;
-			platformHero.scaleX._ = Math.abs(platformHero.scaleX._);
+			SetHeroFacingDirty();
 			isHeroRunning = true;
 		}
 		

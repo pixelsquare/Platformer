@@ -1,7 +1,9 @@
 {
 	"ROOM_DATA_ID": 0,
 	
-	"RoomName": "Room_1",
+	"Room_Name": "Room_1",
+	
+	"Hero_Direction": 1,
 	
 	"Background_Data":
 		[

@@ -6,7 +6,9 @@ package platformer.format;
 typedef RoomFormat = {
 	ROOM_DATA_ID: Int,
 	
-	RoomName: String,
+	Room_Name: String,
+	
+	Hero_Direction: Int,
 	
 	Background_Data: Array<Array<Int>>,
 	

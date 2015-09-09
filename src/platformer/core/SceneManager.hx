@@ -24,9 +24,9 @@ class SceneManager
 	public var gameMainScreen(default, null): MainScreen;
 	public var gamePauseScreen(default, null): PauseScreen;
 	public var gameOverScreen(default, null): GameOverScreen;
+	public var gameDirector(default, null): Director;
 	
 	private var gameScreenList: Array<GameScreen>;
-	private var gameDirector: Director;
 	
 	public static var instance(default, null): SceneManager;
 	public static var curSceneEntity(default, null): Entity;
