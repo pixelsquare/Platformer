@@ -17,7 +17,6 @@ import platformer.name.FontName;
 import platformer.name.ScreenName;
 import platformer.screen.GameScreen;
 
-
 /**
  * ...
  * @author Anthony Ganzon

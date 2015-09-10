@@ -8,17 +8,14 @@ import flambe.input.Key;
 import flambe.input.KeyboardEvent;
 import flambe.subsystem.StorageSystem;
 import flambe.System;
-import flambe.util.Promise;
-import flambe.asset.Manifest;
-import platformer.main.PlatformMain;
 
 import platformer.core.SceneManager;
+import platformer.main.PlatformMain;
 import platformer.main.utils.GameConstants;
 import platformer.name.AssetName;
 import platformer.name.ScreenName;
 import platformer.screen.GameButton;
 import platformer.screen.GameScreen;
-import platformer.pxlSq.Utils;
 
 /**
  * ...

@@ -1,16 +1,14 @@
 package platformer.main.hero;
 
-import flambe.asset.AssetPack;
 import flambe.Component;
-import flambe.display.Sprite;
+import flambe.Disposer;
 import flambe.input.Key;
 import flambe.input.KeyboardEvent;
+import flambe.math.FMath;
 import flambe.math.Point;
 import flambe.System;
-import flambe.math.FMath;
 
 import platformer.main.hero.utils.HeroDirection;
-import platformer.pxlSq.Utils;
 import platformer.main.utils.GameConstants;
 
 /**
@@ -27,11 +25,12 @@ class PlatformHeroControl extends Component
 	private var heroVelocity: Point;
 	private var heroAcceleration: Point;
 	
-	//private var didJump: Bool;
 	private var jumpForce: Float;
+	private var controlDisposer: Disposer;
 	
 	private static inline var UNIT_GRAVITY: Float = 9.8;
 	private static inline var INITIAL_JUMP_FORCE: Float = 220;
+	private static inline var MIN_FALL_VELOCITY: Float = -999;
 	private static inline var MAX_FALL_VELOCITY: Float = 250;
 	
 	public function new () { 
@@ -43,7 +42,6 @@ class PlatformHeroControl extends Component
 		this.heroVelocity = new Point();
 		this.heroAcceleration = new Point();
 		
-		//this.didJump = false;
 		this.jumpForce = INITIAL_JUMP_FORCE;
 	}
 	
@@ -62,12 +60,9 @@ class PlatformHeroControl extends Component
 	
 	public function HasAnyKeyDown(): Bool {
 		return System.keyboard.isDown(Key.W) || System.keyboard.isDown(Key.A) ||
-			System.keyboard.isDown(Key.S) || System.keyboard.isDown(Key.D);
-	}
-	
-	public function ResetJump(): Void {
-		//didJump = false;
-		jumpForce = INITIAL_JUMP_FORCE;
+			System.keyboard.isDown(Key.S) || System.keyboard.isDown(Key.D) ||
+			System.keyboard.isDown(Key.Left) || System.keyboard.isDown(Key.Right) ||
+			System.keyboard.isDown(Key.Up) || System.keyboard.isDown(Key.Down);
 	}
 	
 	// Only avalable when on OnAdded, OnStart and OnUpdate functions
@@ -90,43 +85,39 @@ class PlatformHeroControl extends Component
 		SetHeroFacingDirty();
 		heroDirection = HeroDirection.NONE;
 		
-		System.keyboard.down.connect(function(event: KeyboardEvent) {
-			//if (event.key == Key.W) {
-				//heroDirection = HeroDirection.UP;
-			//}
-			
-			if (event.key == Key.A) {
+		controlDisposer = owner.get(Disposer);
+		if (controlDisposer == null) {
+			owner.add(controlDisposer = new Disposer());
+		}
+		
+		controlDisposer.add(System.keyboard.down.connect(function(event: KeyboardEvent) {			
+			if (event.key == Key.A || event.key == Key.Left) {
 				heroDirection = HeroDirection.LEFT;
 			}
 			
-			//if (event.key == Key.S) {
-				//heroDirection = HeroDirection.DOWN;
-			//}
-			
-			if (event.key == Key.D) {
+			if (event.key == Key.D || event.key == Key.Right) {
 				heroDirection = HeroDirection.RIGHT;
 			}
 			
-			if (event.key == Key.Space) {
+			if (event.key == Key.Space || event.key == Key.Up) {
 				if (!isHeroGrounded)
 					return;
 				
-				//didJump = true;
 				SetHeroVelocity(new Point(0, -jumpForce));
 				isHeroGrounded = false;
 				isHeroOnAir = true;
 			}
-		});
+		}));
 		
-		System.keyboard.up.connect(function(event: KeyboardEvent) {
+		controlDisposer.add(System.keyboard.up.connect(function(event: KeyboardEvent) {
 			if (!HasAnyKeyDown()) {
 				heroDirection = HeroDirection.NONE;
 			}
 			
 			if (event.key == Key.Space) {
-				ResetJump();
+				jumpForce = INITIAL_JUMP_FORCE;
 			}
-		});
+		}));
 	}
 	
 	override public function onUpdate(dt:Float) {
@@ -137,41 +128,28 @@ class PlatformHeroControl extends Component
 		isHeroRunning = false;
 		isHeroGrounded = false;
 		
-		//if (didJump) {
-			//jumpForce += 20;
-			//SetHeroVelocity(new Point(0, -jumpForce));
-			//
-			//if (jumpForce >= 200) {
-				//ResetJump();
-			//}
-		//}
-		
-		// TODO: Limit velocity of free falling hero
-		if (!isHeroGrounded) {
-			heroVelocity.y -= heroAcceleration.y;
-			heroVelocity.y = FMath.clamp(heroVelocity.y, -999, MAX_FALL_VELOCITY);
-			platformHero.y._ += heroVelocity.y * dt;
-			isHeroOnAir = true;
-		}
-		
 		if (heroDirection == HeroDirection.LEFT) {
-			platformHero.x._ -= GameConstants.HERO_SPEED * dt;
+			//platformHero.x._ -= GameConstants.HERO_SPEED * dt;
+			heroVelocity.x = -GameConstants.HERO_SPEED;
 			SetHeroFacingDirty();
 			isHeroRunning = true;
 		}
 		
 		if (heroDirection == HeroDirection.RIGHT) {
-			platformHero.x._ += GameConstants.HERO_SPEED * dt;
+			//platformHero.x._ += GameConstants.HERO_SPEED * dt;
+			heroVelocity.x = GameConstants.HERO_SPEED;
 			SetHeroFacingDirty();
 			isHeroRunning = true;
 		}
 		
-		if (heroDirection == HeroDirection.UP) {
-			platformHero.y._ -= GameConstants.HERO_SPEED * dt;
-		}
+		heroVelocity.x += heroAcceleration.x;
+		platformHero.x._ += heroVelocity.x * dt;
 		
-		if (heroDirection == HeroDirection.DOWN) {
-			platformHero.y._ += GameConstants.HERO_SPEED * dt;
+		if (!isHeroGrounded) {
+			heroVelocity.y -= heroAcceleration.y;
+			heroVelocity.y = FMath.clamp(heroVelocity.y, MIN_FALL_VELOCITY, MAX_FALL_VELOCITY);
+			platformHero.y._ += heroVelocity.y * dt;
+			isHeroOnAir = true;
 		}
 		
 		platformHero.SetAnimationDirty(isHeroRunning);

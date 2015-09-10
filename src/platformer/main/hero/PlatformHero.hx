@@ -4,10 +4,10 @@ import flambe.asset.AssetPack;
 import flambe.display.Sprite;
 import flambe.swf.Library;
 import flambe.swf.MoviePlayer;
+
 import platformer.main.element.GameElement;
-import platformer.main.utils.IGrid;
 import platformer.main.utils.GameConstants;
-import platformer.pxlSq.Utils;
+import platformer.main.utils.IGrid;
 
 /**
  * ...

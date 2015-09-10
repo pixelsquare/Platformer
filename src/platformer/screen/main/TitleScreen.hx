@@ -1,33 +1,25 @@
 package platformer.screen.main;
 
-import flambe.animation.Ease;
 import flambe.asset.AssetPack;
-import flambe.display.Font;
+import flambe.asset.Manifest;
 import flambe.display.ImageSprite;
 import flambe.Entity;
+import flambe.input.Key;
 import flambe.input.KeyboardEvent;
-import flambe.input.PointerEvent;
 import flambe.script.AnimateTo;
-import flambe.script.CallFunction;
-import flambe.script.Delay;
-import flambe.script.Parallel;
 import flambe.script.Repeat;
 import flambe.script.Script;
 import flambe.script.Sequence;
 import flambe.subsystem.StorageSystem;
 import flambe.System;
-import flambe.input.Key;
+import flambe.util.Promise;
 
 import platformer.core.SceneManager;
-import platformer.name.AssetName;
-import platformer.name.FontName;
-import platformer.name.ScreenName;
-import platformer.screen.GameButton;
 import platformer.main.utils.GameConstants;
-import flambe.util.Promise;
-import flambe.asset.Manifest;
-
+import platformer.name.AssetName;
+import platformer.name.ScreenName;
 import platformer.pxlSq.Utils;
+import platformer.screen.GameButton;
 
 /**
  * ...

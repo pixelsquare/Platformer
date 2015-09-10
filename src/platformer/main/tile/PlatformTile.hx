@@ -3,12 +3,11 @@ package platformer.main.tile;
 import flambe.animation.AnimatedFloat;
 import flambe.display.ImageSprite;
 import flambe.display.Texture;
-import platformer.main.tile.utils.TileDataType;
 
-import platformer.main.tile.utils.TileType;
 import platformer.main.element.GameElement;
+import platformer.main.tile.utils.TileDataType;
+import platformer.main.tile.utils.TileType;
 import platformer.main.utils.IGrid;
-import platformer.pxlSq.Utils;
 
 /**
  * ...

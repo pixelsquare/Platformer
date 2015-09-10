@@ -10,7 +10,6 @@ import flambe.util.Promise;
 
 import platformer.name.FontName;
 import platformer.name.ScreenName;
-import platformer.pxlSq.Utils;
 
 /**
  * ...

@@ -4,34 +4,32 @@ import flambe.asset.AssetPack;
 import flambe.asset.File;
 import flambe.Component;
 import flambe.display.FillSprite;
-import flambe.display.ImageSprite;
 import flambe.display.Texture;
 import flambe.Disposer;
 import flambe.Entity;
+import flambe.input.Key;
 import flambe.input.KeyboardEvent;
-import platformer.format.TileFormat;
+import flambe.sound.Playback;
+import flambe.System;
 import haxe.Json;
-import flambe.util.Arrays;
-import platformer.main.hero.PlatformHero;
+
+import platformer.core.DataManager;
+import platformer.core.SceneManager;
+import platformer.format.RoomFormat;
+import platformer.format.TileFormat;
 import platformer.main.hero.PlatformHero;
 import platformer.main.hero.PlatformHeroCollision;
 import platformer.main.hero.PlatformHeroControl;
+import platformer.main.hero.utils.HeroDirection;
 import platformer.main.tile.PlatformBlock;
 import platformer.main.tile.PlatformDoor;
 import platformer.main.tile.PlatformObstacle;
-import flambe.System;
-import flambe.input.Key;
-
-import platformer.pxlSq.Utils;
-import platformer.core.DataManager;
-import platformer.main.tile.utils.TileType;
-import platformer.format.RoomFormat;
 import platformer.main.tile.PlatformTile;
-import platformer.name.AssetName;
-import platformer.main.utils.GameConstants;
 import platformer.main.tile.utils.TileDataType;
-import platformer.main.hero.utils.HeroDirection;
-import platformer.core.SceneManager;
+import platformer.main.tile.utils.TileType;
+import platformer.main.utils.GameConstants;
+import platformer.name.AssetName;
+import platformer.pxlSq.Utils;
 
 /**
  * ...
@@ -60,7 +58,13 @@ class PlatformMain extends Component
 	private var screenCurtain: FillSprite;
 	private var platformDisposer: Disposer;
 	
+	private var bgSound: Playback;
+	
 	private static inline var ROOM_MAX: Int = 5;
+	
+	private static inline var BGM_PATH: String = "audio/bgm/";
+	private static inline var BGM_NAME: String = "Synthony";
+	private static inline var BGM_VOLUME: Float = 0.5;
 	
 	private static inline var TILE_DATA_PATH: String = "tiledata/TileData";
 	private static inline var ROOM_DATA_PATH: String = "roomdata/RoomData_";
@@ -131,8 +135,7 @@ class PlatformMain extends Component
 		
 		if (curRoomIndx > ROOM_MAX) {
 			Utils.ConsoleLog("WIN!");
-			didWin = true;
-			SceneManager.ShowGameOverScreen(true);
+			OnGameEnd(true);
 			return;
 		}
 	
@@ -142,12 +145,12 @@ class PlatformMain extends Component
 	
 	public function ReloadRoom(): Void {
 		// Load character only
-		owner.removeChild(heroEntity);
-		CreatePlatformHero();
+		//owner.removeChild(heroEntity);
+		//CreatePlatformHero();
 		
 		// Load the whole stage
-		//ClearStage();
-		//LoadRoom(currentRoom);
+		ClearStage();
+		LoadRoom(currentRoom);
 	}
 	
 	public function LoadRoom(roomIndx: Int = 1): Void {
@@ -193,14 +196,19 @@ class PlatformMain extends Component
 			// Restart Level
 			if (tile.idy == (GameConstants.GRID_COLS - 1) || tile.GetTileDataType() == TileDataType.OBSTACLE) {
 				Utils.ConsoleLog("LOSE! " + tile.GetTileDataType() + " " + tile.GridIDToString());
-				didWin = false;
-				SceneManager.ShowGameOverScreen();
+				OnGameEnd(false);
 				//ReloadRoom();
 			}
 		});
 		heroEntity.add(platformHeroCollision);
 		
 		owner.addChild(heroEntity);
+	}
+	
+	public function OnGameEnd(win: Bool): Void {
+		didWin = win;
+		SceneManager.ShowGameOverScreen();
+		bgSound.dispose();
 	}
 	
 	public function ShowScreenCurtain(): Void {
@@ -468,6 +476,11 @@ class PlatformMain extends Component
 			owner.add(platformDisposer = new Disposer());
 		}
 		
+		// Background sound
+		bgSound = gameAsset.getSound(BGM_PATH + BGM_NAME).loop(BGM_VOLUME);
+		platformDisposer.add(bgSound);
+		
+		#if html
 		platformDisposer.add(System.keyboard.down.connect(function(event: KeyboardEvent) {
 			if (event.key == Key.Number1) {
 				LoadRoom(1);
@@ -490,9 +503,7 @@ class PlatformMain extends Component
 			if (event.key == Key.F2) {
 				LoadNextRoom();
 			}
-			//if (event.key == Key.Space) {
-				//ClearStage();
-			//}
 		}));
+		#end
 	}
 }

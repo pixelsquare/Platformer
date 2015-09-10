@@ -1,27 +1,19 @@
 package platformer.screen.main;
 
-import flambe.animation.Ease;
 import flambe.asset.AssetPack;
-import flambe.display.Font;
 import flambe.display.ImageSprite;
-import flambe.display.Sprite;
-import flambe.display.TextSprite;
 import flambe.display.Texture;
 import flambe.Entity;
+import flambe.input.Key;
 import flambe.input.KeyboardEvent;
-import flambe.math.Rectangle;
 import flambe.subsystem.StorageSystem;
 import flambe.System;
-import flambe.input.Key;
-import platformer.main.PlatformMain;
 
 import platformer.core.SceneManager;
-import platformer.main.utils.GameConstants;
+import platformer.main.PlatformMain;
 import platformer.name.AssetName;
-import platformer.name.FontName;
 import platformer.name.ScreenName;
 import platformer.screen.GameScreen;
-import platformer.pxlSq.Utils;
 
 /**
  * ...

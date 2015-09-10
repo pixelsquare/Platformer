@@ -37,8 +37,7 @@ class SceneManager
 	public static inline var TARGET_WIDTH: 	Int = 640;
 	public static inline var TARGET_HEIGHT: Int = 800;
 	
-	public function new(director: Director) 
-	{
+	public function new(director: Director) {
 		instance = this;
 		gameDirector = director;
 	}

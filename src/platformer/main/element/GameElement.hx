@@ -1,7 +1,7 @@
 package platformer.main.element;
 
-import flambe.Component;
 import flambe.animation.AnimatedFloat;
+import flambe.Component;
 import flambe.Disposer;
 import flambe.Entity;
 import flambe.scene.Scene;
