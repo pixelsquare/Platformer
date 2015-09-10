@@ -3,16 +3,20 @@ package platformer.core;
 import flambe.animation.Ease;
 import flambe.asset.AssetPack;
 import flambe.Entity;
+import flambe.math.FMath;
 import flambe.scene.Director;
 import flambe.scene.FadeTransition;
 import flambe.subsystem.StorageSystem;
-import platformer.pxlSq.Utils;
+import flambe.System;
+import flambe.display.Sprite;
 
 import platformer.screen.GameScreen;
 import platformer.screen.main.GameOverScreen;
 import platformer.screen.main.MainScreen;
 import platformer.screen.main.PauseScreen;
 import platformer.screen.main.TitleScreen;
+
+import platformer.pxlSq.Utils;
 
 /**
  * ...
@@ -47,6 +51,8 @@ class SceneManager
 		AddGameScreen(gameMainScreen = new MainScreen(assetPack, storage));
 		AddGameScreen(gamePauseScreen = new PauseScreen(assetPack, storage));
 		AddGameScreen(gameOverScreen = new GameOverScreen(assetPack, storage));
+		
+		System.stage.resize.connect(onResize);
 	}
 	
 	private function AddGameScreen(screen: GameScreen) : Void {
@@ -55,6 +61,20 @@ class SceneManager
 		}
 		
 		gameScreenList.push(screen);
+	}
+	
+	public function onResize(): Void {
+		var targetWidth: Float = 800;
+		var targetHeight: Float = 800;
+		
+		var scale: Float = FMath.min(System.stage.width / targetWidth, System.stage.height / targetHeight);
+		if (scale > 1) scale = 1;
+		
+		gameDirector.topScene.get(Sprite)
+		.setScale(scale)
+		.setXY((System.stage.width - targetWidth * scale) / 2, (System.stage.height - targetHeight * scale) / 2);
+		
+		//gameDirector.topScene.get(
 	}
 	
 	public static function UnwindToCurScene(): Void {

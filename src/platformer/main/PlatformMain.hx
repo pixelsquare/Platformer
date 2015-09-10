@@ -221,8 +221,8 @@ class PlatformMain extends Component
 		
 		var heroAnim: Script = new Script();
 		heroAnim.run(new Sequence([
-			new AnimateTo(platformHero.y, platformHero.y._ - 20, 0.5, Ease.sineInOut),
-			new AnimateTo(platformHero.y, System.stage.height + platformHero.GetNaturalHeight(), 0.5),
+			new AnimateTo(platformHero.y, platformHero.y._ - 30, 0.5, Ease.sineOut),
+			new AnimateTo(platformHero.y, System.stage.height + platformHero.GetNaturalHeight(), 0.5, Ease.sineIn),
 			new CallFunction(function() {
 				OnGameEnd(false);
 			})
