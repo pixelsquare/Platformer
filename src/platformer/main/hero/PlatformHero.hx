@@ -1,5 +1,6 @@
 package platformer.main.hero;
 
+import flambe.animation.AnimatedFloat;
 import flambe.asset.AssetPack;
 import flambe.display.Sprite;
 import flambe.swf.Library;
@@ -18,6 +19,9 @@ class PlatformHero extends GameElement implements IGrid
 	public var idx(default, null): Int;
 	public var idy(default, null): Int;
 	
+	public var width(default, null): AnimatedFloat;
+	public var height(default, null): AnimatedFloat;
+	
 	private var heroSprite: Sprite;
 	private var heroLibrary: Library;
 	private var heroMoviePlayer: MoviePlayer;
@@ -30,6 +34,8 @@ class PlatformHero extends GameElement implements IGrid
 	
 	public function new(gameAsset: AssetPack) {
 		this.gameAsset = gameAsset;
+		this.width = new AnimatedFloat(0.0);
+		this.height = new AnimatedFloat(0.0);
 		super();
 	}
 	
@@ -39,9 +45,20 @@ class PlatformHero extends GameElement implements IGrid
 		SetGridID(tileIdx, tileIdy);
 	}
 	
+	public function SetSize(width: Float, height: Float): Void {
+		this.width._ = width;
+		this.height._ = height;
+	}
+	
 	public function SetAnimationDirty(isRunning: Bool): Void {
 		if(heroMoviePlayer.looping) {
 			heroMoviePlayer.loop(isRunning ? HERO_ANIM_RUN : HERO_ANIM_IDLE, false);
+		}
+	}
+	
+	public function SetDeathPose(): Void {
+		if(heroMoviePlayer.looping) {
+			heroMoviePlayer.loop(HERO_ANIM_IDLE, false);
 		}
 	}
 	
@@ -64,11 +81,11 @@ class PlatformHero extends GameElement implements IGrid
 	}
 	
 	override public function GetNaturalWidth():Float {
-		return heroSprite.getNaturalWidth();
+		return (heroSprite != null && heroSprite.getNaturalWidth() > 0) ? heroSprite.getNaturalWidth() : width._;
 	}
 	
 	override public function GetNaturalHeight():Float {
-		return heroSprite.getNaturalHeight();
+		return (heroSprite != null && heroSprite.getNaturalHeight() > 0) ? heroSprite.getNaturalHeight() : height._;
 	}
 	
 	override public function onUpdate(dt:Float) {

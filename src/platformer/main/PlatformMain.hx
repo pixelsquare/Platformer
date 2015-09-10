@@ -1,5 +1,6 @@
 package platformer.main;
 
+import flambe.animation.Ease;
 import flambe.asset.AssetPack;
 import flambe.asset.File;
 import flambe.Component;
@@ -9,6 +10,10 @@ import flambe.Disposer;
 import flambe.Entity;
 import flambe.input.Key;
 import flambe.input.KeyboardEvent;
+import flambe.script.AnimateTo;
+import flambe.script.CallFunction;
+import flambe.script.Script;
+import flambe.script.Sequence;
 import flambe.sound.Playback;
 import flambe.System;
 import haxe.Json;
@@ -58,6 +63,7 @@ class PlatformMain extends Component
 	private var screenCurtain: FillSprite;
 	private var platformDisposer: Disposer;
 	
+	private var platformHero: PlatformHero;
 	private var bgSound: Playback;
 	
 	private static inline var ROOM_MAX: Int = 5;
@@ -177,9 +183,10 @@ class PlatformMain extends Component
 		
 		heroEntity = new Entity();
 		
-		var platformHero: PlatformHero = new PlatformHero(gameAsset);
+		platformHero = new PlatformHero(gameAsset);
 		platformHero.SetParent(owner);
 		platformHero.SetXY(doorIn.x._, doorIn.y._);
+		platformHero.SetSize(GameConstants.TILE_WIDTH, GameConstants.TILE_HEIGHT);
 		heroEntity.add(platformHero);
 		
 		var platformHeroControl: PlatformHeroControl = new PlatformHeroControl();
@@ -196,13 +203,31 @@ class PlatformMain extends Component
 			// Restart Level
 			if (tile.idy == (GameConstants.GRID_COLS - 1) || tile.GetTileDataType() == TileDataType.OBSTACLE) {
 				Utils.ConsoleLog("LOSE! " + tile.GetTileDataType() + " " + tile.GridIDToString());
-				OnGameEnd(false);
+				PlayHeroDeathAnim();
+
+				//OnGameEnd(false);
 				//ReloadRoom();
 			}
 		});
 		heroEntity.add(platformHeroCollision);
 		
 		owner.addChild(heroEntity);
+	}
+	
+	public function PlayHeroDeathAnim(): Void {
+		platformHero.owner.get(PlatformHeroCollision).dispose();
+		platformHero.owner.get(PlatformHeroControl).dispose();
+		platformHero.SetDeathPose();
+		
+		var heroAnim: Script = new Script();
+		heroAnim.run(new Sequence([
+			new AnimateTo(platformHero.y, platformHero.y._ - 20, 0.5, Ease.sineInOut),
+			new AnimateTo(platformHero.y, System.stage.height + platformHero.GetNaturalHeight(), 0.5),
+			new CallFunction(function() {
+				OnGameEnd(false);
+			})
+		]));
+		owner.addChild(new Entity().add(heroAnim));
 	}
 	
 	public function OnGameEnd(win: Bool): Void {

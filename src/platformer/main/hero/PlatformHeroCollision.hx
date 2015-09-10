@@ -136,7 +136,5 @@ class PlatformHeroCollision extends Component
 				platformHero.y._ = baseCol * GameConstants.TILE_HEIGHT + (GameConstants.TILE_HEIGHT / 2) + heroYOffset;
 			}
 		}
-		
-		//Utils.ConsoleLog(heroControl.isHeroGrounded + " " + heroControl.isHeroOnAir);
 	}
 }
