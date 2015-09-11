@@ -56,7 +56,7 @@ class MainScreen extends GameScreen
 		#if html
 		screenDisposer.add(System.keyboard.up.connect(function(event: KeyboardEvent) {
 			if (event.key == Key.P) {
-				SceneManager.ShowPauseScreen();
+				SceneManager.ShowControlsScreen();
 			}
 			
 			if (event.key == Key.G) {
