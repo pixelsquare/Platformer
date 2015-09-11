@@ -24,8 +24,8 @@ class PlatformHeroControl extends Component
 	public var isHeroGrounded(default, null): Bool;
 	public var isHeroOnAir(default, null): Bool;
 	
-	private var heroVelocity: Point;
-	private var heroAcceleration: Point;
+	public var heroVelocity(default, null): Point;
+	public var heroAcceleration(default, null): Point;
 	
 	private var currentTile: PlatformTile;
 	
@@ -33,7 +33,7 @@ class PlatformHeroControl extends Component
 	private var controlDisposer: Disposer;
 	
 	private static inline var UNIT_GRAVITY: Float = 9.8;
-	private static inline var INITIAL_JUMP_FORCE: Float = 220;
+	private static inline var INITIAL_JUMP_FORCE: Float = 350;
 	private static inline var MIN_FALL_VELOCITY: Float = -999;
 	private static inline var MAX_FALL_VELOCITY: Float = 250;
 	
@@ -87,7 +87,7 @@ class PlatformHeroControl extends Component
 	override public function onAdded() {
 		super.onAdded();
 		
-		heroAcceleration = new Point(0, -UNIT_GRAVITY);
+		heroAcceleration = new Point(0, -UNIT_GRAVITY * 2);
 		SetHeroFacingDirty();
 		heroDirection = HeroDirection.NONE;
 	}
@@ -156,15 +156,15 @@ class PlatformHeroControl extends Component
 		isHeroGrounded = false;
 		
 		if (heroDirection == HeroDirection.LEFT) {
-			//platformHero.x._ -= GameConstants.HERO_SPEED * dt;
-			heroVelocity.x = -GameConstants.HERO_SPEED;
+			platformHero.x._ -= GameConstants.HERO_SPEED * dt;
+			//heroVelocity.x = -GameConstants.HERO_SPEED;
 			SetHeroFacingDirty();
 			isHeroRunning = true;
 		}
 		
 		if (heroDirection == HeroDirection.RIGHT) {
-			//platformHero.x._ += GameConstants.HERO_SPEED * dt;
-			heroVelocity.x = GameConstants.HERO_SPEED;
+			platformHero.x._ += GameConstants.HERO_SPEED * dt;
+			//heroVelocity.x = GameConstants.HERO_SPEED;
 			SetHeroFacingDirty();
 			isHeroRunning = true;
 		}

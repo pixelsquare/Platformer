@@ -9,6 +9,8 @@ import platformer.main.tile.PlatformTile;
 import platformer.main.tile.utils.TileDataType;
 import platformer.main.utils.GameConstants;
 
+import platformer.pxlSq.Utils;
+
 /**
  * ...
  * @author Anthony Ganzon
@@ -64,6 +66,10 @@ class PlatformHeroCollision extends Component
 		var topOverlap: Bool = platformHero.y._ % GameConstants.TILE_HEIGHT <= (GameConstants.TILE_HEIGHT / 2);
 		var bottomOverlap: Bool = platformHero.y._ % GameConstants.TILE_HEIGHT >= (GameConstants.TILE_HEIGHT / 2);
 		
+		//var horizontalOverlap: Float = platformHero.x._ % GameConstants.TILE_WIDTH;
+		//var verticalOverlap: Float = platformHero.y._ % GameConstants.TILE_HEIGHT;
+		//Utils.ConsoleLog(horizontalOverlap + " " + verticalOverlap);
+		
 		if(baseRow < (GameConstants.GRID_ROWS - 1)) {
 			var rightTile: PlatformTile = tileGrid[baseRow + 1][baseCol];
 			var ignoreLayer: Bool = collisionLayer == rightTile.tileLayer;
@@ -113,7 +119,8 @@ class PlatformHeroCollision extends Component
 		if(baseCol < (GameConstants.GRID_COLS - 1)) {
 			var bottomTile: PlatformTile = tileGrid[baseRow][baseCol + 1];
 			var ignoreLayer: Bool = bottomTile.tileLayer >= 1;
-			if (HitFlags(bottomTile) && bottomOverlap && ignoreLayer) {
+			var isHeroFalling: Bool = heroControl.heroVelocity.y > 0;
+			if (HitFlags(bottomTile) && bottomOverlap && ignoreLayer && isHeroFalling) {
 				platformHero.y._ = baseCol * GameConstants.TILE_HEIGHT + (GameConstants.TILE_HEIGHT / 2) + heroYOffset;
 				heroControl.SetHeroVelocity(new Point());
 				heroControl.SetIsGrounded(true);
