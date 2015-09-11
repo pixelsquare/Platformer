@@ -2,18 +2,18 @@ package platformer.core;
 
 import flambe.animation.Ease;
 import flambe.asset.AssetPack;
+import flambe.display.Sprite;
 import flambe.Entity;
 import flambe.math.FMath;
 import flambe.scene.Director;
 import flambe.scene.FadeTransition;
 import flambe.subsystem.StorageSystem;
 import flambe.System;
-import flambe.display.Sprite;
 
 import platformer.screen.GameScreen;
+import platformer.screen.main.ControlsScreen;
 import platformer.screen.main.GameOverScreen;
 import platformer.screen.main.MainScreen;
-import platformer.screen.main.PauseScreen;
 import platformer.screen.main.TitleScreen;
 
 import platformer.pxlSq.Utils;
@@ -26,7 +26,7 @@ class SceneManager
 {
 	public var gameTitleScreen(default, null): TitleScreen;
 	public var gameMainScreen(default, null): MainScreen;
-	public var gamePauseScreen(default, null): PauseScreen;
+	public var gameControlScreen(default, null): ControlsScreen;
 	public var gameOverScreen(default, null): GameOverScreen;
 	public var gameDirector(default, null): Director;
 	
@@ -49,7 +49,7 @@ class SceneManager
 	public function InitScreens(assetPack: AssetPack, storage: StorageSystem): Void {
 		AddGameScreen(gameTitleScreen = new TitleScreen(assetPack, storage));
 		AddGameScreen(gameMainScreen = new MainScreen(assetPack, storage));
-		AddGameScreen(gamePauseScreen = new PauseScreen(assetPack, storage));
+		AddGameScreen(gameControlScreen = new ControlsScreen(assetPack, storage));
 		AddGameScreen(gameOverScreen = new GameOverScreen(assetPack, storage));
 		
 		System.stage.resize.connect(onResize);
@@ -106,10 +106,10 @@ class SceneManager
 		curSceneEntity = instance.gameMainScreen.screenEntity;
 	}
 	
-	public static function ShowPauseScreen(willAnimate: Bool = false): Void {	
-		Utils.ConsoleLog("SHOWING [" + instance.gamePauseScreen.GetScreenName() + "]");
+	public static function ShowControlsScreen(willAnimate: Bool = false): Void {	
+		Utils.ConsoleLog("SHOWING [" + instance.gameControlScreen.GetScreenName() + "]");
 		UnwindToCurScene();
-		instance.gameDirector.pushScene(instance.gamePauseScreen.CreateScreen());
+		instance.gameDirector.pushScene(instance.gameControlScreen.CreateScreen());
 	}
 	
 	public static function ShowGameOverScreen(willAnimate: Bool = false) : Void {

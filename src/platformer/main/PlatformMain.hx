@@ -34,6 +34,7 @@ import platformer.main.tile.utils.TileDataType;
 import platformer.main.tile.utils.TileType;
 import platformer.main.utils.GameConstants;
 import platformer.name.AssetName;
+
 import platformer.pxlSq.Utils;
 
 /**
@@ -51,6 +52,7 @@ class PlatformMain extends Component
 	
 	public var heroEntity(default, null): Entity;
 	public var didWin(default, null): Bool;
+	public var canMove(default, null): Bool;
 	
 	private var allTiles: Array<PlatformTile>;
 	
@@ -60,11 +62,14 @@ class PlatformMain extends Component
 	private var doorIn: PlatformTile;
 	private var doorOut: PlatformTile;
 	
-	private var screenCurtain: FillSprite;
-	private var platformDisposer: Disposer;
-	
 	private var platformHero: PlatformHero;
+	private var platformHeroControl: PlatformHeroControl;
+	private var platformHeroCollision: PlatformHeroCollision;
+	
 	private var bgSound: Playback;
+	private var platformDisposer: Disposer;	
+	
+	public static var sharedInstance: PlatformMain;
 	
 	private static inline var ROOM_MAX: Int = 5;
 	
@@ -87,7 +92,10 @@ class PlatformMain extends Component
 		this.allTiles = new Array<PlatformTile>();
 		this.gameAsset = dataManager.gameAsset;
 		
-		this.screenCurtain = new FillSprite(0x000000, System.stage.width, System.stage.height);
+		this.didWin = false;
+		this.canMove = false;
+		
+		sharedInstance = this;
 		
 		InitTileTypes();
 		LoadRoomData(currentRoom);
@@ -189,15 +197,15 @@ class PlatformMain extends Component
 		platformHero.SetSize(GameConstants.TILE_WIDTH, GameConstants.TILE_HEIGHT);
 		heroEntity.add(platformHero);
 		
-		var platformHeroControl: PlatformHeroControl = new PlatformHeroControl();
+		platformHeroControl = new PlatformHeroControl();
 		platformHeroControl.SetHeroDirection((roomDataJson.Hero_Direction == 1) ? HeroDirection.RIGHT : HeroDirection.LEFT);
 		heroEntity.add(platformHeroControl);
 		
-		var platformHeroCollision: PlatformHeroCollision = new PlatformHeroCollision();
-		platformHeroCollision.onTileChanged.connect(function(tile: PlatformTile) {
+		platformHeroCollision = new PlatformHeroCollision();
+		platformDisposer.add(platformHeroCollision.onTileChanged.connect(function(tile: PlatformTile) {
 			if (tile.GetTileDataType() == TileDataType.DOOR && tile.tileType == TileType.DOOR_OUT) {
 				Utils.ConsoleLog("EXIT!");
-				LoadNextRoom();
+				//LoadNextRoom();
 			}
 			
 			// Restart Level
@@ -208,10 +216,14 @@ class PlatformMain extends Component
 				//OnGameEnd(false);
 				//ReloadRoom();
 			}
-		});
+		}));
 		heroEntity.add(platformHeroCollision);
 		
 		owner.addChild(heroEntity);
+	}
+	
+	public function SetHeroCanMove(canMove: Bool) : Void {
+		this.canMove = canMove;
 	}
 	
 	public function PlayHeroDeathAnim(): Void {
@@ -236,14 +248,24 @@ class PlatformMain extends Component
 		bgSound.dispose();
 	}
 	
-	public function ShowScreenCurtain(): Void {
-		if (screenCurtain == null)
-			return;
-		
-		owner.removeChild(new Entity().add(screenCurtain));
+	public function ShowScreenCurtain(): Void {		
+		var screenCurtain: FillSprite = new FillSprite(0x000000, System.stage.width, System.stage.height);
 		owner.addChild(new Entity().add(screenCurtain));
 		
-		screenCurtain.alpha.animate(1, 0, 0.5);
+		var curtainScript: Script = new Script();
+		curtainScript.run(new Sequence([
+			new AnimateTo(screenCurtain.alpha, 0, 0.5),
+			new CallFunction(function() {
+				owner.removeChild(new Entity().add(screenCurtain));
+				screenCurtain.dispose();
+				owner.removeChild(new Entity().add(curtainScript));
+				
+				if (currentRoom == 1) {
+					SceneManager.ShowControlsScreen();
+				}
+			})	
+		]));
+		owner.addChild(new Entity().add(curtainScript));
 	}
 	
 	public function CreateRoomTiles(): Void {
@@ -488,18 +510,19 @@ class PlatformMain extends Component
 		roomDataJson = null;
 		
 		owner.removeChild(heroEntity);
+		heroEntity.dispose();
 	}
 	
 	override public function onAdded() {
 		super.onAdded();
 		
-		CreateRoomTiles();
-		LoadRoom(currentRoom);
-		
 		platformDisposer = owner.get(Disposer);
 		if (platformDisposer == null) {
 			owner.add(platformDisposer = new Disposer());
 		}
+		
+		CreateRoomTiles();
+		LoadRoom(currentRoom);
 		
 		// Background sound
 		bgSound = gameAsset.getSound(BGM_PATH + BGM_NAME).loop(BGM_VOLUME);

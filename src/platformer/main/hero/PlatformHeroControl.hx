@@ -9,6 +9,8 @@ import flambe.math.Point;
 import flambe.System;
 
 import platformer.main.hero.utils.HeroDirection;
+import platformer.main.tile.PlatformTile;
+import platformer.main.tile.utils.TileType;
 import platformer.main.utils.GameConstants;
 
 /**
@@ -24,6 +26,8 @@ class PlatformHeroControl extends Component
 	
 	private var heroVelocity: Point;
 	private var heroAcceleration: Point;
+	
+	private var currentTile: PlatformTile;
 	
 	private var jumpForce: Float;
 	private var controlDisposer: Disposer;
@@ -41,6 +45,8 @@ class PlatformHeroControl extends Component
 		
 		this.heroVelocity = new Point();
 		this.heroAcceleration = new Point();
+		
+		this.currentTile = null;
 		
 		this.jumpForce = INITIAL_JUMP_FORCE;
 	}
@@ -84,13 +90,31 @@ class PlatformHeroControl extends Component
 		heroAcceleration = new Point(0, -UNIT_GRAVITY);
 		SetHeroFacingDirty();
 		heroDirection = HeroDirection.NONE;
+	}
+	
+	override public function onStart() {
+		super.onStart();
 		
 		controlDisposer = owner.get(Disposer);
 		if (controlDisposer == null) {
 			owner.add(controlDisposer = new Disposer());
 		}
 		
-		controlDisposer.add(System.keyboard.down.connect(function(event: KeyboardEvent) {			
+		var platformCollision: PlatformHeroCollision = owner.get(PlatformHeroCollision);
+		controlDisposer.add(platformCollision.onTileChanged.connect(function(tile: PlatformTile) {
+			currentTile = tile;
+		}));
+		
+		controlDisposer.add(System.keyboard.down.connect(function(event: KeyboardEvent) {	
+			if (!PlatformMain.sharedInstance.canMove)
+				return;
+			
+			if (event.key == Key.W || event.key == Key.Up) {
+				if (currentTile.tileType == TileType.DOOR_OUT) {
+					PlatformMain.sharedInstance.LoadNextRoom();
+				}
+			}
+			
 			if (event.key == Key.A || event.key == Key.Left) {
 				heroDirection = HeroDirection.LEFT;
 			}
@@ -99,7 +123,7 @@ class PlatformHeroControl extends Component
 				heroDirection = HeroDirection.RIGHT;
 			}
 			
-			if (event.key == Key.Space || event.key == Key.Up) {
+			if (event.key == Key.Space) {
 				if (!isHeroGrounded)
 					return;
 				
@@ -110,6 +134,9 @@ class PlatformHeroControl extends Component
 		}));
 		
 		controlDisposer.add(System.keyboard.up.connect(function(event: KeyboardEvent) {
+			if (!PlatformMain.sharedInstance.canMove)
+				return;
+				
 			if (!HasAnyKeyDown()) {
 				heroDirection = HeroDirection.NONE;
 			}
