@@ -69,7 +69,7 @@ class PlatformMain extends Component
 	private var doorOut: PlatformTile;
 	
 	private var fpsEntity: Entity;
-	//private var bgSound: Playback;
+	private var bgSound: Playback;
 	private var platformDisposer: Disposer;	
 	
 	public static var sharedInstance: PlatformMain;
@@ -247,7 +247,7 @@ class PlatformMain extends Component
 	public function OnGameEnd(win: Bool): Void {
 		didWin = win;
 		SceneManager.ShowGameOverScreen();
-		//bgSound.dispose();
+		bgSound.dispose();
 	}
 	
 	public function ShowScreenCurtain(): Void {		
@@ -543,10 +543,10 @@ class PlatformMain extends Component
 		LoadRoom(currentRoom);
 		
 		// Background sound
-		//bgSound = gameAsset.getSound(BGM_PATH + BGM_NAME).loop(BGM_VOLUME);
-		//platformDisposer.add(bgSound);
+		bgSound = gameAsset.getSound(BGM_PATH + BGM_NAME).loop(BGM_VOLUME);
+		platformDisposer.add(bgSound);
 		
-		//#if html
+		#if html
 		platformDisposer.add(System.keyboard.down.connect(function(event: KeyboardEvent) {
 			if (event.key == Key.Number1) {
 				LoadRoom(1);
@@ -570,6 +570,6 @@ class PlatformMain extends Component
 				LoadNextRoom();
 			}
 		}));
-		//#end
+		#end
 	}
 }

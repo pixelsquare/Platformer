@@ -51,10 +51,10 @@ class PlatformHeroControl extends Component
 	private var controlDisposer: Disposer;
 	
 	private static inline var UNIT_GRAVITY: Float = 9.8;
-	private static inline var GRAVITY_MULTIPLIER: Float = 70;
-	private static inline var INITIAL_JUMP_FORCE: Float = 250;
-	//private static inline var MIN_FALL_VELOCITY: Float = -999;
-	//private static inline var MAX_FALL_VELOCITY: Float = 250;
+	private static inline var GRAVITY_MULTIPLIER: Float = 100;
+	private static inline var INITIAL_JUMP_FORCE: Float = 300;
+	private static inline var MIN_FALL_VELOCITY: Float = -9999;
+	private static inline var MAX_FALL_VELOCITY: Float = 1000;
 	
 	//private static inline var HERO_FRICTION: Float = 0.5;
 	
@@ -178,14 +178,6 @@ class PlatformHeroControl extends Component
 				SetHeroFacingDirty();
 			}
 			
-			//if (event.key == Key.W) {
-				//heroDirection = HeroDirection.UP;
-			//}
-			//
-			//if (event.key == Key.S) {
-				//heroDirection = HeroDirection.DOWN;
-			//}
-			
 			if (event.key == Key.Space) {
 				if (!isHeroGrounded)
 					return;
@@ -282,7 +274,7 @@ class PlatformHeroControl extends Component
 		
 		if (!isHeroGrounded) {
 			heroVelocity.y -= heroAcceleration.y * dt;
-			//heroVelocity.y = FMath.clamp(heroVelocity.y, MIN_FALL_VELOCITY, MAX_FALL_VELOCITY);
+			heroVelocity.y = FMath.clamp(heroVelocity.y, MIN_FALL_VELOCITY, MAX_FALL_VELOCITY);
 			platformHero.y._ += heroVelocity.y * dt;
 		}
 			
