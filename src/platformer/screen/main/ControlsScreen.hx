@@ -55,7 +55,7 @@ class ControlsScreen extends GameScreen
 		screenDisposer.add(System.keyboard.up.connect(function(event: KeyboardEvent) {
 			if (event.key == Key.Space) {
 				SceneManager.UnwindToCurScene();
-				PlatformMain.sharedInstance.SetHeroCanMove(true);
+				PlatformMain.sharedInstance.platformHeroControl.SetIsKinematic(false);
 			}
 		}));
 		

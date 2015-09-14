@@ -5,16 +5,21 @@ import flambe.asset.AssetPack;
 import flambe.display.Sprite;
 import flambe.swf.Library;
 import flambe.swf.MoviePlayer;
+import platformer.main.element.ElementCollider;
+import flambe.util.Signal1;
 
 import platformer.main.element.GameElement;
 import platformer.main.utils.GameConstants;
 import platformer.main.utils.IGrid;
+import platformer.main.tile.PlatformTile;
+
+import platformer.pxlSq.Utils;
 
 /**
  * ...
  * @author Anthony Ganzon
  */
-class PlatformHero extends GameElement implements IGrid
+class PlatformHero extends ElementCollider implements IGrid
 {
 	public var idx(default, null): Int;
 	public var idy(default, null): Int;
@@ -22,9 +27,14 @@ class PlatformHero extends GameElement implements IGrid
 	public var width(default, null): AnimatedFloat;
 	public var height(default, null): AnimatedFloat;
 	
+	public var onTileChanged(default, null): Signal1<PlatformTile>;
+	
 	private var heroSprite: Sprite;
 	private var heroLibrary: Library;
 	private var heroMoviePlayer: MoviePlayer;
+	
+	private var curTile: PlatformTile;
+	private var prevTile: PlatformTile;
 	
 	private var gameAsset: AssetPack;
 	
@@ -36,13 +46,34 @@ class PlatformHero extends GameElement implements IGrid
 		this.gameAsset = gameAsset;
 		this.width = new AnimatedFloat(0.0);
 		this.height = new AnimatedFloat(0.0);
+		this.onTileChanged = new Signal1<PlatformTile>();
 		super();
 	}
 	
 	public function UpdateGridPosition(): Void {
-		var tileIdx: Int = Std.int(Math.floor(heroSprite.x._ / GameConstants.TILE_WIDTH));
-		var tileIdy: Int = Std.int(Math.floor(heroSprite.y._ / GameConstants.TILE_HEIGHT));
+		var tileIdx: Int = Math.floor(heroSprite.x._ / GameConstants.TILE_WIDTH);
+		var tileIdy: Int = Math.floor(heroSprite.y._ / GameConstants.TILE_HEIGHT);
 		SetGridID(tileIdx, tileIdy);
+		SetTileChangedDirty();
+	}
+	
+	public function SetTileChangedDirty(): Void {
+		var baseRow: Int = Math.floor(x._ / GameConstants.TILE_WIDTH);
+		var baseCol: Int = Math.floor(y._ / GameConstants.TILE_HEIGHT);
+		
+		var platformMain: PlatformMain = parent.get(PlatformMain);
+		if (platformMain == null)
+			return;
+			
+		var tileGrid: Array<Array<PlatformTile>> = platformMain.tileGrid;
+		if (tileGrid == null)
+			return;
+		
+		curTile = tileGrid[baseRow][baseCol];
+		if (curTile != prevTile) {
+			onTileChanged.emit(tileGrid[baseRow][baseCol]);
+			prevTile = tileGrid[baseRow][baseCol];
+		}
 	}
 	
 	public function SetSize(width: Float, height: Float): Void {

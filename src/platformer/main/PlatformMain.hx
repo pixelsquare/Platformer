@@ -4,7 +4,10 @@ import flambe.animation.Ease;
 import flambe.asset.AssetPack;
 import flambe.asset.File;
 import flambe.Component;
+import flambe.debug.FpsDisplay;
 import flambe.display.FillSprite;
+import flambe.display.Font;
+import flambe.display.TextSprite;
 import flambe.display.Texture;
 import flambe.Disposer;
 import flambe.Entity;
@@ -23,7 +26,6 @@ import platformer.core.SceneManager;
 import platformer.format.RoomFormat;
 import platformer.format.TileFormat;
 import platformer.main.hero.PlatformHero;
-import platformer.main.hero.PlatformHeroCollision;
 import platformer.main.hero.PlatformHeroControl;
 import platformer.main.hero.utils.HeroDirection;
 import platformer.main.tile.PlatformBlock;
@@ -34,6 +36,7 @@ import platformer.main.tile.utils.TileDataType;
 import platformer.main.tile.utils.TileType;
 import platformer.main.utils.GameConstants;
 import platformer.name.AssetName;
+import platformer.name.FontName;
 
 import platformer.pxlSq.Utils;
 
@@ -51,10 +54,13 @@ class PlatformMain extends Component
 	public var tileGrid(default, null): Array<Array<PlatformTile>>;
 	
 	public var heroEntity(default, null): Entity;
-	public var didWin(default, null): Bool;
-	public var canMove(default, null): Bool;
+	public var platformHero(default, null): PlatformHero;
+	public var platformHeroControl(default, null): PlatformHeroControl;
 	
-	private var allTiles: Array<PlatformTile>;
+	public var didWin(default, null): Bool;
+	public var isGameOver(default, null): Bool;
+	
+	public var allTiles: Array<PlatformTile>;
 	
 	private var gameAsset: AssetPack;
 	private var roomDataJson: RoomFormat;
@@ -62,11 +68,8 @@ class PlatformMain extends Component
 	private var doorIn: PlatformTile;
 	private var doorOut: PlatformTile;
 	
-	private var platformHero: PlatformHero;
-	private var platformHeroControl: PlatformHeroControl;
-	private var platformHeroCollision: PlatformHeroCollision;
-	
-	private var bgSound: Playback;
+	private var fpsEntity: Entity;
+	//private var bgSound: Playback;
 	private var platformDisposer: Disposer;	
 	
 	public static var sharedInstance: PlatformMain;
@@ -93,7 +96,7 @@ class PlatformMain extends Component
 		this.gameAsset = dataManager.gameAsset;
 		
 		this.didWin = false;
-		this.canMove = false;
+		this.isGameOver = false;
 		
 		sharedInstance = this;
 		
@@ -181,6 +184,7 @@ class PlatformMain extends Component
 		
 		CreatePlatformHero();
 		ShowScreenCurtain();
+		ShowFPS();
 	}
 	
 	public function CreatePlatformHero(): Void {
@@ -195,14 +199,10 @@ class PlatformMain extends Component
 		platformHero.SetParent(owner);
 		platformHero.SetXY(doorIn.x._, doorIn.y._);
 		platformHero.SetSize(GameConstants.TILE_WIDTH, GameConstants.TILE_HEIGHT);
-		heroEntity.add(platformHero);
-		
-		platformHeroControl = new PlatformHeroControl();
-		platformHeroControl.SetHeroDirection((roomDataJson.Hero_Direction == 1) ? HeroDirection.RIGHT : HeroDirection.LEFT);
-		heroEntity.add(platformHeroControl);
-		
-		platformHeroCollision = new PlatformHeroCollision();
-		platformDisposer.add(platformHeroCollision.onTileChanged.connect(function(tile: PlatformTile) {
+		platformDisposer.add(platformHero.onTileChanged.connect(function(tile: PlatformTile) {
+			if (isGameOver)
+				return;
+			
 			if (tile.GetTileDataType() == TileDataType.DOOR && tile.tileType == TileType.DOOR_OUT) {
 				Utils.ConsoleLog("EXIT!");
 				//LoadNextRoom();
@@ -217,19 +217,19 @@ class PlatformMain extends Component
 				//ReloadRoom();
 			}
 		}));
-		heroEntity.add(platformHeroCollision);
+		heroEntity.add(platformHero);
+		
+		platformHeroControl = new PlatformHeroControl();
+		platformHeroControl.SetHeroDirection((roomDataJson.Hero_Direction == 1) ? HeroDirection.RIGHT : HeroDirection.LEFT);
+		heroEntity.add(platformHeroControl);
 		
 		owner.addChild(heroEntity);
 	}
 	
-	public function SetHeroCanMove(canMove: Bool) : Void {
-		this.canMove = canMove;
-	}
-	
 	public function PlayHeroDeathAnim(): Void {
-		platformHero.owner.get(PlatformHeroCollision).dispose();
-		platformHero.owner.get(PlatformHeroControl).dispose();
+		isGameOver = true;
 		platformHero.SetDeathPose();
+		platformHeroControl.SetIsKinematic(true);
 		
 		var heroAnim: Script = new Script();
 		heroAnim.run(new Sequence([
@@ -237,6 +237,8 @@ class PlatformMain extends Component
 			new AnimateTo(platformHero.y, System.stage.height + platformHero.GetNaturalHeight(), 0.5, Ease.sineIn),
 			new CallFunction(function() {
 				OnGameEnd(false);
+				owner.removeChild(new Entity().add(heroAnim));
+				heroAnim.dispose();
 			})
 		]));
 		owner.addChild(new Entity().add(heroAnim));
@@ -245,12 +247,13 @@ class PlatformMain extends Component
 	public function OnGameEnd(win: Bool): Void {
 		didWin = win;
 		SceneManager.ShowGameOverScreen();
-		bgSound.dispose();
+		//bgSound.dispose();
 	}
 	
 	public function ShowScreenCurtain(): Void {		
 		var screenCurtain: FillSprite = new FillSprite(0x000000, System.stage.width, System.stage.height);
 		owner.addChild(new Entity().add(screenCurtain));
+		platformHeroControl.SetIsKinematic(true);
 		
 		var curtainScript: Script = new Script();
 		curtainScript.run(new Sequence([
@@ -263,9 +266,24 @@ class PlatformMain extends Component
 				if (currentRoom == 1) {
 					SceneManager.ShowControlsScreen();
 				}
+				else {
+					platformHeroControl.SetIsKinematic(false);
+				}
 			})	
 		]));
 		owner.addChild(new Entity().add(curtainScript));
+	}
+	
+	public function ShowFPS(): Void {
+		if (fpsEntity != null) {
+			owner.removeChild(fpsEntity);
+		}
+		
+		fpsEntity = new Entity()
+			.add(new TextSprite(new Font(gameAsset, FontName.FONT_ARIAL_20))
+			.setXY(2, System.stage.height * 0.975))
+			.add(new FpsDisplay());
+		owner.addChild(fpsEntity);
 	}
 	
 	public function CreateRoomTiles(): Void {
@@ -525,10 +543,10 @@ class PlatformMain extends Component
 		LoadRoom(currentRoom);
 		
 		// Background sound
-		bgSound = gameAsset.getSound(BGM_PATH + BGM_NAME).loop(BGM_VOLUME);
-		platformDisposer.add(bgSound);
+		//bgSound = gameAsset.getSound(BGM_PATH + BGM_NAME).loop(BGM_VOLUME);
+		//platformDisposer.add(bgSound);
 		
-		#if html
+		//#if html
 		platformDisposer.add(System.keyboard.down.connect(function(event: KeyboardEvent) {
 			if (event.key == Key.Number1) {
 				LoadRoom(1);
@@ -552,6 +570,6 @@ class PlatformMain extends Component
 				LoadNextRoom();
 			}
 		}));
-		#end
+		//#end
 	}
 }

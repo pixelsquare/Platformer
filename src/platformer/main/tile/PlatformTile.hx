@@ -3,6 +3,7 @@ package platformer.main.tile;
 import flambe.animation.AnimatedFloat;
 import flambe.display.ImageSprite;
 import flambe.display.Texture;
+import platformer.main.element.ElementCollider;
 
 import platformer.main.element.GameElement;
 import platformer.main.tile.utils.TileDataType;
@@ -13,7 +14,7 @@ import platformer.main.utils.IGrid;
  * ...
  * @author Anthony Ganzon
  */
-class PlatformTile extends GameElement implements IGrid
+class PlatformTile extends ElementCollider implements IGrid
 {
 	public var idx(default, null): Int;
 	public var idy(default, null): Int;
