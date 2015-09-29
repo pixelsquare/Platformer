@@ -5,8 +5,8 @@ import flambe.asset.AssetPack;
 import flambe.display.Sprite;
 import flambe.swf.Library;
 import flambe.swf.MoviePlayer;
+
 import platformer.main.element.GameCollider;
-import platformer.main.element.GameElement;
 
 /**
  * ...

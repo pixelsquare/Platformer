@@ -5,8 +5,9 @@ import flambe.asset.AssetPack;
 import flambe.asset.File;
 import flambe.display.FillSprite;
 import flambe.display.Font;
-import flambe.display.ImageSprite;
+import flambe.display.SubTexture;
 import flambe.display.TextSprite;
+import flambe.display.Texture;
 import flambe.Disposer;
 import flambe.Entity;
 import flambe.input.Key;
@@ -15,22 +16,20 @@ import flambe.script.AnimateTo;
 import flambe.script.CallFunction;
 import flambe.script.Script;
 import flambe.script.Sequence;
-import flambe.subsystem.StorageSystem;
-import flambe.display.Texture;
+import flambe.System;
+import haxe.Json;
+
 import platformer.core.DataManager;
+import platformer.core.SceneManager;
 import platformer.main.format.RoomFormat;
 import platformer.main.hero.HeroControl;
 import platformer.main.hero.PlatformHero;
 import platformer.main.tile.PlatformTile;
 import platformer.main.tile.utils.TileType;
-import platformer.name.AssetName;
 import platformer.main.utils.GameConstants;
-import flambe.display.SubTexture;
-import flambe.System;
+import platformer.name.AssetName;
 import platformer.name.FontName;
 import platformer.pxlsq.Utils;
-import haxe.Json;
-import platformer.core.SceneManager;
 
 /**
  * ...

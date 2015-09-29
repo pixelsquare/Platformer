@@ -1,23 +1,22 @@
 package platformer.screen.main;
 
 import flambe.asset.AssetPack;
+import flambe.asset.Manifest;
 import flambe.display.ImageSprite;
 import flambe.Entity;
 import flambe.input.Key;
 import flambe.input.KeyboardEvent;
 import flambe.subsystem.StorageSystem;
 import flambe.System;
-import platformer.main.PlatformMain;
+import flambe.util.Promise;
 
 import platformer.core.SceneManager;
+import platformer.main.PlatformMain;
 import platformer.main.utils.GameConstants;
 import platformer.name.AssetName;
 import platformer.name.ScreenName;
-import platformer.screen.GameScreen;
-import flambe.util.Promise;
-import flambe.asset.Manifest;
-
 import platformer.pxlsq.Utils;
+import platformer.screen.GameScreen;
 
 /**
  * ...

@@ -12,9 +12,9 @@ import flambe.script.Script;
 import flambe.script.Sequence;
 import flambe.subsystem.StorageSystem;
 import flambe.System;
-import platformer.main.PlatformMain;
 
 import platformer.core.SceneManager;
+import platformer.main.PlatformMain;
 import platformer.name.AssetName;
 import platformer.name.ScreenName;
 import platformer.screen.GameScreen;

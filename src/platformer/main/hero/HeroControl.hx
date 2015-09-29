@@ -2,16 +2,15 @@ package platformer.main.hero;
 
 import flambe.Component;
 import flambe.Disposer;
+import flambe.input.Key;
 import flambe.input.KeyboardEvent;
-import flambe.input.PointerEvent;
+import flambe.math.FMath;
 import flambe.math.Point;
 import flambe.System;
-import flambe.input.Key;
+
+import platformer.main.tile.PlatformTile;
 import platformer.main.tile.utils.TileType;
 import platformer.main.utils.GameConstants;
-import platformer.pxlsq.Utils;
-import platformer.main.tile.PlatformTile;
-import flambe.math.FMath;
 
 /**
  * ...

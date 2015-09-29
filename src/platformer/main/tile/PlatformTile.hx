@@ -3,6 +3,7 @@ package platformer.main.tile;
 import flambe.animation.AnimatedFloat;
 import flambe.display.ImageSprite;
 import flambe.display.Texture;
+
 import platformer.main.element.GameCollider;
 import platformer.main.element.GameElement;
 import platformer.main.tile.utils.TileType;
