@@ -1,11 +1,11 @@
 # Basic information about the game.
-name: Platformer
-description: A simple platformer game
+name: Platformer Game
+description: A Platformer game.
 
 # Information about the game developer.
 developer:
   name: PixelSquare
-  url: https://github.com/pixelsquare/
+  url: https://github.com/pixelsquare
 
 # The game's unique identifier.
 id: com.pixelsquare.platformer

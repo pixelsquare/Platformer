@@ -1,13 +1,14 @@
 package platformer.screen;
 
 import flambe.asset.AssetPack;
-import flambe.display.FillSprite;
 import flambe.display.Font;
+import flambe.display.ImageSprite;
+import flambe.display.PatternSprite;
 import flambe.display.TextSprite;
 import flambe.Entity;
-import flambe.System;
 import flambe.util.Promise;
 
+import platformer.name.AssetName;
 import platformer.name.FontName;
 import platformer.name.ScreenName;
 
@@ -17,67 +18,65 @@ import platformer.name.ScreenName;
  */
 class PreloadScreen extends GameScreen
 {
-	private var promise: Promise<Dynamic>;
+	private var preloadPromise: Promise<Dynamic>;
 	
-	private static inline var BACKGROUND_COLOR: Int = 0x202020;
-	private static inline var LOADING_BAR_COLOR: Int = 0xFFFFFF;
+	private var loadingBarText: TextSprite;
+	private var loadingBarPadding: Int = 50;
+	private var loadingBarProgress: Float = 0.0;
 	
-	public function new(preloadPack: AssetPack, promise: Promise<Dynamic>) {
-		super(preloadPack, null);
-		
-		this.promise = promise;
+	private static inline var LOADING_TEXT: String = "LOADING | ";
+	
+	public function new(gameAsset:AssetPack, promise: Promise<Dynamic>) {
+		super(gameAsset, null);
+		preloadPromise = promise;
 	}
 	
-	override public function CreateScreen(): Entity {
-		screenEntity = super.CreateScreen();
-		screenBackground.color = 0x202020;
-		HideTitleText();
+	/* Keeps the loading text in the center of the stage */
+	public function setloadingTextDirty(): Void {
+		loadingBarText.text = LOADING_TEXT + Std.int(loadingBarProgress * 100) + "%";
+		loadingBarText.centerAnchor();
+		loadingBarText.setXY(screenWidth / 2, screenHeight * 0.45);
+	}
+	
+	override public function createScreen():Entity {
+		screenEntity = super.createScreen();
+		screenTitleText.dispose();
 		
-		var loadingEntity: Entity = new Entity();
-		var loadingFont: Font = new Font(gameAsset, FontName.FONT_VANADINE_32);
-		var loadingText: TextSprite = new TextSprite(loadingFont, "LOADING | ");
-		loadingText.centerAnchor();
-		loadingText.setXY(System.stage.width / 2, (System.stage.height * 0.5) - (loadingText.getNaturalHeight() / 2));
-		loadingEntity.addChild(new Entity().add(loadingText));
+		loadingBarText = new TextSprite(new Font(gameAsset, FontName.FONT_VANADINE_32), LOADING_TEXT + Std.int(loadingBarProgress * 100) + "%");
+		loadingBarText.centerAnchor();
+		loadingBarText.setXY(screenWidth / 2, screenHeight * 0.45);
+		addToEntity(loadingBarText);
 		
-		var padding: Int = 100;
-		var progressWidth: Float = System.stage.width - (padding * 2);
+		var progressLeft: ImageSprite = new ImageSprite(gameAsset.getTexture(AssetName.PROGRESS_LEFT));
+		var progressRight: ImageSprite = new ImageSprite(gameAsset.getTexture(AssetName.PROGRESS_RIGHT));
 		
-		var loadingBarEntity: Entity = new Entity();
-		var loadingBarBG: FillSprite = new FillSprite(LOADING_BAR_COLOR, progressWidth, 33);
-		loadingBarBG.centerAnchor();
-		loadingBarBG.setXY(System.stage.width / 2, (System.stage.height * 0.5) + (loadingBarBG.getNaturalHeight() / 2));
-		loadingBarEntity.addChild(new Entity().add(loadingBarBG));
+		var totalWidth: Float = screenWidth - progressLeft.texture.width - progressRight.texture.width - 2 * loadingBarPadding;
+		var yOffset: Float = screenHeight / 2 - progressLeft.texture.height / 2;
+
+		progressLeft.setXY(loadingBarPadding, yOffset);
+		addToEntity(progressLeft);
 		
-		var loadingBG: FillSprite = new FillSprite(BACKGROUND_COLOR, loadingBarBG.width._ * 0.98, 30);
-		loadingBG.centerAnchor();
-		loadingBG.setXY(loadingBarBG.x._, loadingBarBG.y._);
-		loadingBarEntity.addChild(new Entity().add(loadingBG));
+		var progressBG: PatternSprite = new PatternSprite(gameAsset.getTexture(AssetName.PROGRESS_BG), totalWidth);
+		progressBG.setXY(progressLeft.x._ + progressLeft.texture.width, yOffset);
+		addToEntity(progressBG);
 		
-		var loadingBar: FillSprite = new FillSprite(LOADING_BAR_COLOR, 0, 10);
-		loadingBar.setXY(
-			(System.stage.width / 2) - (loadingBG.width._ * 0.475), 
-			loadingBG.y._ - (loadingBar.getNaturalHeight() / 2)
-		);
-		loadingBarEntity.addChild(new Entity().add(loadingBar));
+		var progressFill: PatternSprite = new PatternSprite(gameAsset.getTexture(AssetName.PROGRESS_FILL));
+		progressFill.setXY(progressBG.x._, yOffset);
 		
-		screenEntity.addChild(loadingEntity.addChild(loadingBarEntity));
-		
-		// Set maximum width relative to loading bg
-		progressWidth = loadingBG.width._ * 0.95;
-		
-		promise.progressChanged.connect(function() {
-			var percentage: Float = promise.progress / promise.total;
-			loadingBar.width._ = percentage * progressWidth;
-			loadingText.text = "LOADING | " + Std.int(percentage * 100) + "%";
-			loadingText.centerAnchor();
-			loadingText.setXY(System.stage.width / 2, System.stage.height * 0.45);
+		preloadPromise.progressChanged.connect(function() {
+			loadingBarProgress = preloadPromise.progress / preloadPromise.total;
+			progressFill.width._ = loadingBarProgress * totalWidth;
+			setloadingTextDirty();
 		});
+		addToEntity(progressFill);
+		
+		progressRight.setXY(progressFill.x._ + totalWidth, yOffset);
+		addToEntity(progressRight);
 		
 		return screenEntity;
 	}
 	
-	override public function GetScreenName(): String {
+	override public function getScreenName():String {
 		return ScreenName.SCREEN_PRELOAD;
 	}
 }

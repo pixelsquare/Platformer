@@ -18,70 +18,60 @@ import platformer.core.SceneManager;
 import platformer.main.utils.GameConstants;
 import platformer.name.AssetName;
 import platformer.name.ScreenName;
-import platformer.pxlSq.Utils;
-import platformer.screen.GameButton;
+import platformer.pxlsq.Utils;
+import platformer.screen.GameScreen;
+import platformer.screen.PreloadScreen;
 
 /**
  * ...
  * @author Anthony Ganzon
  */
 class TitleScreen extends GameScreen
-{
-	private var startGameBtn: GameButton;
-	
-	public function new(assetPack: AssetPack, storage: StorageSystem) {		
-		super(assetPack, storage);
+{	
+	public function new(gameAsset:AssetPack, gameStorage:StorageSystem) {
+		super(gameAsset, gameStorage);
 	}
 	
-	override public function CreateScreen(): Entity {
-		screenEntity = super.CreateScreen();
-		HideTitleText();
-		HideBackground();
+	override public function createScreen():Entity {
+		screenEntity = super.createScreen();
+		screenTemplate.dispose();
 		
 		var background: ImageSprite = new ImageSprite(gameAsset.getTexture(AssetName.ASSET_BACKGROUND));
 		background.centerAnchor();
-		background.setXY(System.stage.width / 2, System.stage.height / 2);
+		background.setXY(screenWidth / 2, screenHeight / 2);
 		background.setScaleXY(
-			(System.stage.width / background.getNaturalWidth()) / 2 + (GameConstants.GAME_WIDTH / background.getNaturalWidth()) / 2,
-			(System.stage.height / background.getNaturalHeight()) / 2 + (GameConstants.GAME_HEIGHT / background.getNaturalHeight()) / 2
+			screenWidth / background.getNaturalWidth()  / 2 + GameConstants.GAME_WIDTH / background.getNaturalWidth() / 2,
+			screenHeight / background.getNaturalHeight() / 2 + GameConstants.GAME_HEIGHT / background.getNaturalHeight() / 2
 		);
-		AddToEntity(background);
+		addToEntity(background);
 		
 		var title: ImageSprite = new ImageSprite(gameAsset.getTexture(AssetName.ASSET_GAME_TITLE));
 		title.centerAnchor();
-		title.setXY(System.stage.width / 2, System.stage.height * 0.3);
-		AddToEntity(title);
+		title.setXY(screenWidth / 2, screenHeight * 0.3);
+		addToEntity(title);
 		
 		var spaceToStart: ImageSprite = new ImageSprite(gameAsset.getTexture(AssetName.ASSET_GAME_START));
 		spaceToStart.centerAnchor();
-		spaceToStart.setXY(System.stage.width / 2, System.stage.height * 0.7);
-		AddToEntity(spaceToStart);
+		spaceToStart.setXY(screenWidth / 2, screenHeight * 0.7);
+		addToEntity(spaceToStart);
 		
 		var blinkScript: Script = new Script();
 		blinkScript.run(new Repeat(new Sequence([
 			new AnimateTo(spaceToStart.alpha, 0.25, 0.5),
 			new AnimateTo(spaceToStart.alpha, 1, 0.5)
 		])));
-		AddToEntity(blinkScript);
+		addToEntity(blinkScript);
 		
 		screenDisposer.add(System.keyboard.up.connect(function(event: KeyboardEvent) {
 			if (event.key == Key.Space) {
-				var promise: Promise<AssetPack> = System.loadAssetPack(Manifest.fromAssets(MainScreen.STREAMING_ASSET_PACK));
-				promise.get(function(streamingAsset: AssetPack) {
-					Utils.ConsoleLog("Streaming Asset loaded!");
-					SceneManager.ShowMainScreen();
-					SceneManager.instance.gameMainScreen.InitPlatformMain(streamingAsset);
-					
-				});
-				//SceneManager.ShowMainScreen();
-				SceneManager.ShowScreen(new PreloadScreen(gameAsset, promise));
+				SceneManager.getMainScreen().initPlatformMain();
 			}
 		}));
 		
 		return screenEntity;
 	}
 	
-	override public function GetScreenName(): String {
+	override public function getScreenName():String {
 		return ScreenName.SCREEN_TITLE;
 	}
 }

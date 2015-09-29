@@ -5,36 +5,21 @@ import flambe.asset.AssetPack;
 import flambe.display.Sprite;
 import flambe.swf.Library;
 import flambe.swf.MoviePlayer;
-import platformer.main.element.ElementCollider;
-import flambe.util.Signal1;
-
+import platformer.main.element.GameCollider;
 import platformer.main.element.GameElement;
-import platformer.main.utils.GameConstants;
-import platformer.main.utils.IGrid;
-import platformer.main.tile.PlatformTile;
-
-import platformer.pxlSq.Utils;
 
 /**
  * ...
  * @author Anthony Ganzon
  */
-class PlatformHero extends ElementCollider implements IGrid
+class PlatformHero extends GameCollider
 {
-	public var idx(default, null): Int;
-	public var idy(default, null): Int;
-	
 	public var width(default, null): AnimatedFloat;
 	public var height(default, null): AnimatedFloat;
 	
-	public var onTileChanged(default, null): Signal1<PlatformTile>;
-	
 	private var heroSprite: Sprite;
 	private var heroLibrary: Library;
-	private var heroMoviePlayer: MoviePlayer;
-	
-	private var curTile: PlatformTile;
-	private var prevTile: PlatformTile;
+	private var heroMovPlayer: MoviePlayer;
 	
 	private var gameAsset: AssetPack;
 	
@@ -42,81 +27,39 @@ class PlatformHero extends ElementCollider implements IGrid
 	private static inline var HERO_ANIM_RUN: String = "hero_dash";
 	private static inline var HERO_ANIM_PATH: String = "platformerassets/heroanim";
 	
-	public function new(gameAsset: AssetPack) {
-		this.gameAsset = gameAsset;
-		this.width = new AnimatedFloat(0.0);
-		this.height = new AnimatedFloat(0.0);
-		this.onTileChanged = new Signal1<PlatformTile>();
+	public function new(assets: AssetPack) {
 		super();
-	}
-	
-	public function UpdateGridPosition(): Void {
-		var tileIdx: Int = Math.floor(heroSprite.x._ / GameConstants.TILE_WIDTH);
-		var tileIdy: Int = Math.floor(heroSprite.y._ / GameConstants.TILE_HEIGHT);
-		SetGridID(tileIdx, tileIdy);
-		SetTileChangedDirty();
-	}
-	
-	public function SetTileChangedDirty(): Void {
-		var baseRow: Int = Math.floor(x._ / GameConstants.TILE_WIDTH);
-		var baseCol: Int = Math.floor(y._ / GameConstants.TILE_HEIGHT);
 		
-		var platformMain: PlatformMain = parent.get(PlatformMain);
-		if (platformMain == null)
-			return;
-			
-		var tileGrid: Array<Array<PlatformTile>> = platformMain.tileGrid;
-		if (tileGrid == null)
-			return;
+		gameAsset = assets;
 		
-		curTile = tileGrid[baseRow][baseCol];
-		if (curTile != prevTile) {
-			onTileChanged.emit(tileGrid[baseRow][baseCol]);
-			prevTile = tileGrid[baseRow][baseCol];
-		}
+		width = new AnimatedFloat(0);
+		height = new AnimatedFloat(0);
 	}
 	
-	public function SetSize(width: Float, height: Float): Void {
-		this.width._ = width;
-		this.height._ = height;
-	}
-	
-	public function SetAnimationDirty(isRunning: Bool): Void {
-		if(heroMoviePlayer.looping) {
-			heroMoviePlayer.loop(isRunning ? HERO_ANIM_RUN : HERO_ANIM_IDLE, false);
-		}
-	}
-	
-	public function SetDeathPose(): Void {
-		if(heroMoviePlayer.looping) {
-			heroMoviePlayer.loop(HERO_ANIM_IDLE, false);
-		}
-	}
-	
-	override public function Init(): Void {
-		super.Init();
+	override public function init():Void {
+		super.init();
 		
 		heroLibrary = new Library(gameAsset, HERO_ANIM_PATH);
-		heroMoviePlayer = new MoviePlayer(heroLibrary);
-		heroMoviePlayer.loop(HERO_ANIM_IDLE);
+		heroMovPlayer = new MoviePlayer(heroLibrary);
+		heroMovPlayer.loop(HERO_ANIM_IDLE);
 		
 		heroSprite = new Sprite();
-		heroSprite.centerAnchor();
+		//heroSprite.centerAnchor();
 	}
 	
-	override public function Draw(): Void {
-		super.Draw();
+	override public function draw():Void {
+		super.draw();
 		
-		elementEntity.add(heroMoviePlayer);
+		elementEntity.add(heroMovPlayer);
 		elementEntity.add(heroSprite);
 	}
 	
-	override public function GetNaturalWidth():Float {
-		return (heroSprite != null && heroSprite.getNaturalWidth() > 0) ? heroSprite.getNaturalWidth() : width._;
+	override public function getNaturalWidth():Float {
+		return width._;
 	}
 	
-	override public function GetNaturalHeight():Float {
-		return (heroSprite != null && heroSprite.getNaturalHeight() > 0) ? heroSprite.getNaturalHeight() : height._;
+	override public function getNaturalHeight():Float {
+		return height._;
 	}
 	
 	override public function onUpdate(dt:Float) {
@@ -127,19 +70,36 @@ class PlatformHero extends ElementCollider implements IGrid
 			heroSprite.setXY(x._, y._);
 			heroSprite.setScale(scale._);
 			heroSprite.setScaleXY(scaleX._, scaleY._);
-			
-			UpdateGridPosition();
+			heroSprite.setRotation(rotation._);
 		}
 	}
 	
-	/* INTERFACE platformer.main.utils.IGrid */
-	
-	public function SetGridID(idx:Int, idy:Int, updatePosition:Bool = false): Void {
-		this.idx = idx;
-		this.idy = idy;
+	override public function dispose() {
+		super.dispose();
+		
+		if(heroSprite != null)
+			heroSprite.dispose();
+			
+		if(heroMovPlayer != null)
+			heroMovPlayer.dispose();
 	}
 	
-	public function GridIDToString(): String {
-		return "Grid [" + this.idx + "," + this.idy + "]";
+	public function setSize(width: Float, height: Float): Void {
+		this.width._ = width;
+		this.height._ = height;
+	}
+	
+	public function setAnimationDirty(isRunning: Bool): Void {
+		if (!heroMovPlayer.looping)
+			return;
+		
+		heroMovPlayer.loop(isRunning ? HERO_ANIM_RUN : HERO_ANIM_IDLE, false);
+	}
+	
+	public function setDeathPose(): Void {
+		if (!heroMovPlayer.looping)
+			return;
+		
+		heroMovPlayer.loop(HERO_ANIM_IDLE, false);
 	}
 }

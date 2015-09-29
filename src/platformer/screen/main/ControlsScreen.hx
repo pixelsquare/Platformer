@@ -1,6 +1,7 @@
 package platformer.screen.main;
 
 import flambe.asset.AssetPack;
+import flambe.display.FillSprite;
 import flambe.display.ImageSprite;
 import flambe.Entity;
 import flambe.input.Key;
@@ -13,7 +14,6 @@ import flambe.subsystem.StorageSystem;
 import flambe.System;
 
 import platformer.core.SceneManager;
-import platformer.main.PlatformMain;
 import platformer.name.AssetName;
 import platformer.name.ScreenName;
 import platformer.screen.GameScreen;
@@ -24,45 +24,47 @@ import platformer.screen.GameScreen;
  */
 class ControlsScreen extends GameScreen
 {
-	public function new(assetPack: AssetPack, storage: StorageSystem) {		
-		super(assetPack, storage);
+	private static inline var DEFAULT_BG_COLOR: Int = 0xFFFFFF;
+	
+	public function new(gameAsset:AssetPack, gameStorage:StorageSystem) {
+		super(gameAsset, gameStorage);
 	}
 	
-	override public function CreateScreen():Entity {
-		screenEntity = super.CreateScreen();
-		screenBackground.color = 0xFFFFFF;
-		screenBackground.alpha.animate(0, 0.5, 0.5);
-		HideTitleText();
-		//HideBackground();
+	override public function createScreen():Entity {
+		screenEntity = super.createScreen();
+		screenTemplate.dispose();
 		
-		var controlsImg: ImageSprite = new ImageSprite(gameAsset.getTexture(AssetName.ASSET_GAME_CONTROLS));
-		controlsImg.centerAnchor();
-		controlsImg.setXY(System.stage.width / 2, System.stage.height / 2);
-		AddToEntity(controlsImg);
+		screenBackground = new FillSprite(DEFAULT_BG_COLOR, screenWidth, screenHeight);
+		screenBackground.alpha.animate(0, 0.5, 0.5);
+		addToEntity(screenBackground);
+		
+		var controls: ImageSprite = new ImageSprite(gameAsset.getTexture(AssetName.ASSET_GAME_CONTROLS));
+		controls.centerAnchor();
+		controls.setXY(screenWidth / 2, screenHeight / 2);
+		addToEntity(controls);
 		
 		var spaceToContinue: ImageSprite = new ImageSprite(gameAsset.getTexture(AssetName.ASSET_GAME_CONTINUE));
 		spaceToContinue.centerAnchor();
-		spaceToContinue.setXY(System.stage.width / 2, System.stage.height * 0.85);
-		AddToEntity(spaceToContinue);
+		spaceToContinue.setXY(screenWidth / 2, screenHeight * 0.85);
+		addToEntity(spaceToContinue);
 		
 		var blinkScript: Script = new Script();
 		blinkScript.run(new Repeat(new Sequence([
 			new AnimateTo(spaceToContinue.alpha, 0.25, 0.5),
 			new AnimateTo(spaceToContinue.alpha, 1, 0.5)
 		])));
-		AddToEntity(blinkScript);
+		addToEntity(blinkScript);
 		
 		screenDisposer.add(System.keyboard.up.connect(function(event: KeyboardEvent) {
 			if (event.key == Key.Space) {
-				SceneManager.UnwindToCurScene();
-				PlatformMain.sharedInstance.platformHeroControl.SetIsKinematic(false);
+				SceneManager.unwindToCurScene();
 			}
 		}));
 		
 		return screenEntity;
 	}
 	
-	override public function GetScreenName():String {
+	override public function getScreenName():String {
 		return ScreenName.SCREEN_CONTROLS;
-	}	
+	}
 }

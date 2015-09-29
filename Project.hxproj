@@ -4,13 +4,13 @@
   <output>
     <movie outputType="CustomBuild" />
     <movie input="" />
-    <movie path="" />
+    <movie path="flambe.yaml" />
     <movie fps="30" />
     <movie width="800" />
     <movie height="600" />
-    <movie version="11" />
+    <movie version="0" />
     <movie minorVersion="0" />
-    <movie platform="Flash Player" />
+    <movie platform="Flambe" />
     <movie background="#000000" />
   </output>
   <!-- Other classes to be compiled into your SWF -->
@@ -19,12 +19,12 @@
   </classpaths>
   <!-- Build options -->
   <build>
-    <option directives="" />
+    <option directives="flash-strict" />
     <option flashStrict="True" />
     <option noInlineOnDebug="False" />
-    <option mainClass="" />
+    <option mainClass="platformer.Main" />
     <option enabledebug="True" />
-    <option additional="" />
+    <option additional="-swf-version 11.2&#xA;--no-output" />
   </build>
   <!-- haxelib libraries -->
   <haxelib>
@@ -34,10 +34,6 @@
   <compileTargets>
     <!-- example: <compile path="..." /> -->
   </compileTargets>
-  <!-- Assets to embed into the output SWF -->
-  <library>
-    <!-- example: <asset path="..." id="..." update="..." glyphs="..." mode="..." place="..." sharepoint="..." /> -->
-  </library>
   <!-- Paths to exclude from the Project Explorer tree -->
   <hiddenPaths>
     <hidden path="build" />
@@ -51,7 +47,7 @@
   <options>
     <option showHiddenPaths="False" />
     <option testMovie="Custom" />
-    <option testMovieCommand="flambe run $(TargetBuild) --$(BuildConfig) --no-build --no-fdb || pause" />
+    <option testMovieCommand="" />
   </options>
   <!-- Plugin storage -->
   <storage />

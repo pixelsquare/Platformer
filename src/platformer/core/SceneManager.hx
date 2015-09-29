@@ -2,21 +2,18 @@ package platformer.core;
 
 import flambe.animation.Ease;
 import flambe.asset.AssetPack;
-import flambe.display.Sprite;
 import flambe.Entity;
-import flambe.math.FMath;
 import flambe.scene.Director;
 import flambe.scene.FadeTransition;
+import flambe.scene.Transition;
 import flambe.subsystem.StorageSystem;
-import flambe.System;
 
+import platformer.pxlsq.Utils;
 import platformer.screen.GameScreen;
 import platformer.screen.main.ControlsScreen;
 import platformer.screen.main.GameOverScreen;
 import platformer.screen.main.MainScreen;
 import platformer.screen.main.TitleScreen;
-
-import platformer.pxlSq.Utils;
 
 /**
  * ...
@@ -24,38 +21,34 @@ import platformer.pxlSq.Utils;
  */
 class SceneManager
 {
-	public var gameTitleScreen(default, null): TitleScreen;
-	public var gameMainScreen(default, null): MainScreen;
-	public var gameControlScreen(default, null): ControlsScreen;
-	public var gameOverScreen(default, null): GameOverScreen;
 	public var gameDirector(default, null): Director;
+	
+	public var gameTitleScreen(default, null): TitleScreen;
+	public var gameMainScreen(default, null): MainScreen; 
+	public var gameControlsScreen(default, null): ControlsScreen;
+	public var gameOverScreen(default, null): GameOverScreen;
 	
 	private var gameScreenList: Array<GameScreen>;
 	
-	public static var instance(default, null): SceneManager;
+	public static var sharedInstance(default, null): SceneManager;
 	public static var curSceneEntity(default, null): Entity;
 	
-	private static inline var DURATION_SHORT: Float = 0.5;
-	private static inline var DURATION_LONG: Int = 1;
-	
-	public static inline var TARGET_WIDTH: 	Int = 640;
-	public static inline var TARGET_HEIGHT: Int = 800;
+	private static inline var TRANSITION_SHORT: Float = 0.5;
+	private static inline var TRANSITION_LONG: Float = 1.0;
 	
 	public function new(director: Director) {
-		instance = this;
+		sharedInstance = this;
 		gameDirector = director;
 	}
 	
-	public function InitScreens(assetPack: AssetPack, storage: StorageSystem): Void {
-		AddGameScreen(gameTitleScreen = new TitleScreen(assetPack, storage));
-		AddGameScreen(gameMainScreen = new MainScreen(assetPack, storage));
-		AddGameScreen(gameControlScreen = new ControlsScreen(assetPack, storage));
-		AddGameScreen(gameOverScreen = new GameOverScreen(assetPack, storage));
-		
-		System.stage.resize.connect(onResize);
+	public function initScreens(assetPack: AssetPack, storage: StorageSystem): Void {
+		addGameScreen(gameTitleScreen = new TitleScreen(assetPack, storage));
+		addGameScreen(gameMainScreen = new MainScreen(assetPack, storage));
+		addGameScreen(gameControlsScreen = new ControlsScreen(assetPack, storage));
+		addGameScreen(gameOverScreen = new GameOverScreen(assetPack, storage));
 	}
 	
-	private function AddGameScreen(screen: GameScreen) : Void {
+	private function addGameScreen(screen: GameScreen): Void {
 		if (gameScreenList == null) {
 			gameScreenList = new Array<GameScreen>();
 		}
@@ -63,58 +56,71 @@ class SceneManager
 		gameScreenList.push(screen);
 	}
 	
-	public function onResize(): Void {
-		var targetWidth: Float = 800;
-		var targetHeight: Float = 800;
-		
-		var scale: Float = FMath.min(System.stage.width / targetWidth, System.stage.height / targetHeight);
-		if (scale > 1) scale = 1;
-		
-		gameDirector.topScene.get(Sprite)
-		.setScale(scale)
-		.setXY((System.stage.width - targetWidth * scale) / 2, (System.stage.height - targetHeight * scale) / 2);
-		
-		//gameDirector.topScene.get(
+	public static function unwindToCurScene(?transition: Transition, ?onComplete: Void->Void): Void {
+		sharedInstance.gameDirector.unwindToScene(curSceneEntity, transition, onComplete);
 	}
 	
-	public static function UnwindToCurScene(): Void {
-		instance.gameDirector.unwindToScene(curSceneEntity);
+	public static function unwindToScene(sceneEntity: Entity, ?transition: Transition, ?onComplete: Void->Void): Void {
+		sharedInstance.gameDirector.unwindToScene(sceneEntity, transition, onComplete);
 	}
 	
-	public static function UnwindToScene(scene: Entity): Void {
-		instance.gameDirector.unwindToScene(scene);
+	public static function pushScene(screenEntity: Entity, ?transition: Transition, ?onComplete: Void->Void): Void {
+		sharedInstance.gameDirector.pushScene(screenEntity, transition, onComplete);
 	}
 	
-	public static function ShowScreen(gameScreen: GameScreen, willAnimate: Bool = false): Void {
-		Utils.ConsoleLog("SHOW SCREEN [" + gameScreen.GetScreenName() + "]");
-		instance.gameDirector.unwindToScene(gameScreen.CreateScreen(),
-			willAnimate ? new FadeTransition(DURATION_SHORT, Ease.linear) : null);
+	public static function showScreen(gameScreen: GameScreen, willAnimate: Bool = false, ?onComplete: Void->Void): Void {
+		Utils.consoleLog("SHOWING SCREEN [" + gameScreen.getScreenName() + "]");
+		unwindToScene(gameScreen.createScreen(),
+			willAnimate ? new FadeTransition(TRANSITION_SHORT, Ease.linear) : null, onComplete);
 		curSceneEntity = gameScreen.screenEntity;
+		gameScreen.displayFPS();
 	}
 	
-	public static function ShowTitleScreen(willAnimate: Bool = false): Void {
-		Utils.ConsoleLog("SHOWING [" + instance.gameTitleScreen.GetScreenName() + "]");
-		instance.gameDirector.unwindToScene(instance.gameTitleScreen.CreateScreen(),
-			willAnimate ? new FadeTransition(DURATION_SHORT, Ease.linear) : null);
-		curSceneEntity = instance.gameTitleScreen.screenEntity;
+	public static function showTitleScreen(willAnimate: Bool = false, ?onComplete: Void->Void): Void {
+		Utils.consoleLog("SHOWING SCREEN [" + sharedInstance.gameTitleScreen.getScreenName() + "]");
+		unwindToScene(sharedInstance.gameTitleScreen.createScreen(),
+			willAnimate ? new FadeTransition(TRANSITION_SHORT, Ease.linear) : null, onComplete);
+		curSceneEntity = sharedInstance.gameTitleScreen.screenEntity;
+		sharedInstance.gameTitleScreen.displayFPS();
 	}
 	
-	public static function ShowMainScreen(willAnimate: Bool = false): Void {
-		Utils.ConsoleLog("SHOWING [" + instance.gameMainScreen.GetScreenName() + "]");
-		instance.gameDirector.unwindToScene(instance.gameMainScreen.CreateScreen(),
-			willAnimate ? new FadeTransition(DURATION_SHORT, Ease.linear) : null);
-		curSceneEntity = instance.gameMainScreen.screenEntity;
+	public static function showMainScreen(willAnimate: Bool = false, ?onComplete: Void->Void): Void {
+		Utils.consoleLog("SHOWING SCREEN [" + sharedInstance.gameMainScreen.getScreenName() + "]");
+		unwindToScene(sharedInstance.gameMainScreen.createScreen(),
+			willAnimate ? new FadeTransition(TRANSITION_SHORT, Ease.linear): null, onComplete);
+		curSceneEntity = sharedInstance.gameMainScreen.screenEntity;
+		sharedInstance.gameMainScreen.displayFPS();
 	}
 	
-	public static function ShowControlsScreen(willAnimate: Bool = false): Void {	
-		Utils.ConsoleLog("SHOWING [" + instance.gameControlScreen.GetScreenName() + "]");
-		UnwindToCurScene();
-		instance.gameDirector.pushScene(instance.gameControlScreen.CreateScreen());
+	public static function showControlsScreen(willAnimate: Bool = false, ?onComplete: Void->Void): Void {
+		Utils.consoleLog("SHOWING SCREEN [" + sharedInstance.gameControlsScreen.getScreenName() + "]");
+		unwindToCurScene();
+		pushScene(sharedInstance.gameControlsScreen.createScreen(),
+			willAnimate ? new FadeTransition(TRANSITION_SHORT, Ease.linear) : null, onComplete);
+		sharedInstance.gameControlsScreen.displayFPS();
 	}
 	
-	public static function ShowGameOverScreen(willAnimate: Bool = false) : Void {
-		Utils.ConsoleLog("SHOWING [" + instance.gameOverScreen.GetScreenName() + "]");
-		UnwindToCurScene();
-		instance.gameDirector.pushScene(instance.gameOverScreen.CreateScreen());
+	public static function showGameOverScreen(willAnimate: Bool = false, ?onComplete: Void->Void): Void {
+		Utils.consoleLog("SHOWING SCREEN [" + sharedInstance.gameOverScreen.getScreenName() + "]");
+		unwindToCurScene();
+		pushScene(sharedInstance.gameOverScreen.createScreen(),
+			willAnimate ? new FadeTransition(TRANSITION_SHORT, Ease.linear) : null, onComplete);
+		sharedInstance.gameOverScreen.displayFPS();
+	}
+	
+	public static function getTitleScreen(): TitleScreen {
+		return sharedInstance.gameTitleScreen;
+	}
+	
+	public static function getMainScreen(): MainScreen {
+		return sharedInstance.gameMainScreen;
+	}
+	
+	public static function getControlsScreen(): ControlsScreen {
+		return sharedInstance.gameControlsScreen;
+	}
+	
+	public static function getGameOverScreen(): GameOverScreen {
+		return sharedInstance.gameOverScreen;
 	}
 }

@@ -6,7 +6,7 @@ import flambe.Disposer;
 import flambe.Entity;
 import flambe.scene.Scene;
 
-import platformer.pxlSq.Utils;
+import platformer.pxlsq.Utils;
 
 /**
  * ...
@@ -23,6 +23,8 @@ class GameElement extends Component
 	public var scaleX(default, null): AnimatedFloat;
 	public var scaleY(default, null): AnimatedFloat;
 	
+	public var rotation(default, null): AnimatedFloat;
+	
 	public var parent(default, null): Entity;
 	
 	private var elementEntity: Entity;
@@ -36,94 +38,99 @@ class GameElement extends Component
 		this.scale = new AnimatedFloat(1.0);
 		this.scaleX = new AnimatedFloat(1.0);
 		this.scaleY = new AnimatedFloat(1.0);
-			
-		Init();
+		this.rotation = new AnimatedFloat(0.0);
 	}
 	
-	public function Init(): Void { 
+	public function init(): Void { 
 		this.elementEntity = new Entity()
 			.add(this.elementScene = new Scene(false))
 			.add(this.elementDisposer = new Disposer());
 	}
 	
-	public function Draw(): Void { }
+	public function draw(): Void { }
 	
-	public function AddToEntity(component: Component, append: Bool = true): Void {
+	public function addToEntity(component: Component, append: Bool = true): Void {
 		if (component == null) {
-			Utils.ConsoleLog("Cannot add nulled components. [" + component.name + "]");
+			Utils.consoleLog("Cannot add nulled components. [" + component.name + "]");
 			return;
 		}
 		
 		elementEntity.addChild(new Entity().add(component), append);
 	}
 	
-	public function RemoveEntity(component: Component): Void {
+	public function removeEntity(component: Component): Void {
 		if (component == null) {
-			Utils.ConsoleLog("Cannot remove nulled components. [" + component.name + "]");
+			Utils.consoleLog("Cannot remove nulled components. [" + component.name + "]");
 			return;
 		}
 		
 		elementEntity.removeChild(new Entity().add(component));
 	}
 	
-	public function RemoveAndDispose(component: Component): Void {
-		RemoveEntity(component);
+	public function removeAndDispose(component: Component): Void {
+		removeEntity(component);
 		component.dispose();
 	}
 	
-	public function GetNaturalHeight(): Float {
+	public function getNaturalHeight(): Float {
 		return 0.0;
 	}
 	
-	public function GetNaturalWidth(): Float {
+	public function getNaturalWidth(): Float {
 		return 0.0;
 	}
 	
-	public function SetAlpha(alpha: Float): GameElement {
+	public function setAlpha(alpha: Float): GameElement {
 		this.alpha._ = alpha;
 		return this;
 	}
 	
-	public function SetXY(x: Float, y: Float): GameElement {
+	public function setXY(x: Float, y: Float): GameElement {
 		this.x._ = x;
 		this.y._ = y;
 		return this;
 	}
 	
-	public function SetScale(scale: Float): GameElement {
+	public function setScale(scale: Float): GameElement {
 		this.scale._ = scale;
 		return this;
 	}
 	
-	public function SetScaleXY(scaleX: Float, scaleY: Float): GameElement {
+	public function setScaleXY(scaleX: Float, scaleY: Float): GameElement {
 		this.scaleX._ = scaleX;
 		this.scaleY._ = scaleY;
 		return this;
 	}
 	
-	public function SetParent(parent: Entity): GameElement {
+	public function setRotation(rotation: Float): GameElement {
+		this.rotation._ = rotation;
+		return this;
+	}
+	
+	public function setParent(parent: Entity): GameElement {
 		this.parent = parent;
 		return this;
 	}
 	
-	public function SetVisibility(visible: Bool): GameElement {
+	public function setVisibility(visible: Bool): GameElement {
 		return this;
 	}
 	
 	override public function onAdded() {
 		super.onAdded();
 		
+		init();
 		owner.addChild(elementEntity);
 		
-		if (owner.get(Disposer) != null) {
-			elementDisposer = owner.get(Disposer);
+		elementDisposer = owner.get(Disposer);
+		if (elementDisposer == null) {
+			owner.add(elementDisposer = new Disposer());
 		}
 	}
 	
 	override public function onStart() {
 		super.onStart();
-		
-		Draw();
+		draw();
 	}
 	
 	override public function onUpdate(dt:Float) {
@@ -134,27 +141,36 @@ class GameElement extends Component
 		this.scale.update(dt);
 		this.scaleX.update(dt);
 		this.scaleY.update(dt);
+		this.rotation.update(dt);
 	}
 	
 	override public function dispose() {
 		super.dispose();
 		
-		elementEntity.dispose();
+		if (elementEntity != null) 
+			elementEntity.dispose();
+			
+		if (parent != null) 
+			parent.dispose();
 	}
 	
-	public function AlphaToString(): String {
+	public function alphaToString(): String {
 		return "Alpha [" + this.alpha + "]";
 	}
 	
-	public function PositionToString(): String {
+	public function positionToString(): String {
 		return "Position [" + this.x._ + "," + this.y._ + "]";
 	}
 	
-	public function ScaleToString(): String {
+	public function scaleToString(): String {
 		return "Scale [" + this.scale._ + "]";
 	}
 	
-	public function ScaleXYToString(): String {
+	public function scaleXYToString(): String {
 		return "Scale XY [" + this.scaleX._ + "," + this.scaleY._ + "]";
+	}
+	
+	public function rotationToString(): String {
+		return "Rotation [" + this.rotation + "]";
 	}
 }

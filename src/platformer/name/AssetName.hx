@@ -13,6 +13,11 @@ class AssetName
 	public static inline var LOGO_PXLSQR: 					String = "pxlsq_logo";
 	public static inline var ASSET_CUBE: 					String = "asset_cube";
 	
+	public static inline var PROGRESS_BG: 					String = "progressbar/progress_bg";
+	public static inline var PROGRESS_LEFT: 				String = "progressbar/progress_left";
+	public static inline var PROGRESS_RIGHT: 				String = "progressbar/progress_right";
+	public static inline var PROGRESS_FILL: 				String = "progressbar/progress_fill";
+	
 	public static inline var ASSET_BACKGROUND: 				String = "platformerassets/img/bg";
 	
 	public static inline var ASSET_GAME_TITLE: 				String = "platformerassets/img/title";
@@ -29,6 +34,4 @@ class AssetName
 	public static inline var ASSET_SPIKE_UP: 				String = "platformerassets/img/spike0001";
 	public static inline var ASSET_SPIKE_DOWN: 				String = "platformerassets/img/spike0002";
 	public static inline var ASSET_TILES: 					String = "platformerassets/img/tile";
-	
-	
 }

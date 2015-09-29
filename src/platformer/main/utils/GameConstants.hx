@@ -17,7 +17,5 @@ class GameConstants
 	public static inline var TILE_WIDTH: Int = 40;
 	public static inline var TILE_HEIGHT: Int = 40;
 	
-	public static inline var TWEEN_SPEED: Float = 0.2;
-	
-	public static inline var HERO_SPEED = 120;
+	public static inline var GRAVITY: Int = 1000;
 }

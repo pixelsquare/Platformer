@@ -3,12 +3,10 @@ package platformer.main;
 import flambe.animation.Ease;
 import flambe.asset.AssetPack;
 import flambe.asset.File;
-import flambe.Component;
-import flambe.debug.FpsDisplay;
 import flambe.display.FillSprite;
 import flambe.display.Font;
+import flambe.display.ImageSprite;
 import flambe.display.TextSprite;
-import flambe.display.Texture;
 import flambe.Disposer;
 import flambe.Entity;
 import flambe.input.Key;
@@ -17,226 +15,381 @@ import flambe.script.AnimateTo;
 import flambe.script.CallFunction;
 import flambe.script.Script;
 import flambe.script.Sequence;
-import flambe.sound.Playback;
-import flambe.System;
-import haxe.Json;
-
+import flambe.subsystem.StorageSystem;
+import flambe.display.Texture;
 import platformer.core.DataManager;
-import platformer.core.SceneManager;
-import platformer.format.RoomFormat;
-import platformer.format.TileFormat;
+import platformer.main.format.RoomFormat;
+import platformer.main.hero.HeroControl;
 import platformer.main.hero.PlatformHero;
-import platformer.main.hero.PlatformHeroControl;
-import platformer.main.hero.utils.HeroDirection;
-import platformer.main.tile.PlatformBlock;
-import platformer.main.tile.PlatformDoor;
-import platformer.main.tile.PlatformObstacle;
 import platformer.main.tile.PlatformTile;
-import platformer.main.tile.utils.TileDataType;
 import platformer.main.tile.utils.TileType;
-import platformer.main.utils.GameConstants;
 import platformer.name.AssetName;
+import platformer.main.utils.GameConstants;
+import flambe.display.SubTexture;
+import flambe.System;
 import platformer.name.FontName;
-
-import platformer.pxlSq.Utils;
+import platformer.pxlsq.Utils;
+import haxe.Json;
+import platformer.core.SceneManager;
 
 /**
  * ...
  * @author Anthony Ganzon
  */
-class PlatformMain extends Component
+class PlatformMain extends DataManager
 {
-	public var dataManager(default, null): DataManager;
 	public var streamingAsset(default, null): AssetPack;
+	public var curRoomIndx(default, null): Int;
 	
-	public var currentRoom(default, null): Int;
-	public var tileList(default, null): Map<TileType, Texture>;
 	public var tileGrid(default, null): Array<Array<PlatformTile>>;
+	public var allTiles(default, null): Array<PlatformTile>;
 	
-	public var heroEntity(default, null): Entity;
-	public var platformHero(default, null): PlatformHero;
-	public var platformHeroControl(default, null): PlatformHeroControl;
-	
-	public var didWin(default, null): Bool;
 	public var isGameOver(default, null): Bool;
+	public var didWin(default, null): Bool;
 	
-	public var allTiles: Array<PlatformTile>;
+	private var tileTextures: Map<Int, Texture>;
+	private var obstacleTextures: Map<Int, Texture>;
+	private var doorTextures: Map<Int, Texture>;
 	
-	private var gameAsset: AssetPack;
+	private var levelEntity: Entity;
+	
+	private var bgEntity: Entity;
+	private var blocksEntity: Entity;
+	private var obstaclesEntity: Entity;
+	private var doorsEntity: Entity;
+	
+	private var heroEntity: Entity;
+	private var platformHero: PlatformHero;
+	private var heroControl: HeroControl;
+	
+	private var layerEntity: Entity;
+	
 	private var roomDataJson: RoomFormat;
+	private var platformDisposer: Disposer;
 	
-	private var doorIn: PlatformTile;
-	private var doorOut: PlatformTile;
-	
-	private var fpsEntity: Entity;
-	private var bgSound: Playback;
-	private var platformDisposer: Disposer;	
-	
-	public static var sharedInstance: PlatformMain;
+	private static inline var ROOM_DATA_PATH: String = "roomdata/RoomData_";
+	private static inline var ROOM_DATA_EXT: String = ".json";
 	
 	private static inline var ROOM_MAX: Int = 5;
 	
-	private static inline var BGM_PATH: String = "audio/bgm/";
-	private static inline var BGM_NAME: String = "Synthony";
-	private static inline var BGM_VOLUME: Float = 0.5;
+	public static var sharedInstance(default, null): PlatformMain;
 	
-	private static inline var TILE_DATA_PATH: String = "tiledata/TileData";
-	private static inline var ROOM_DATA_PATH: String = "roomdata/RoomData_";
-	private static inline var DATA_EXT: String = ".json";
-	
-	public function new(dataManager: DataManager, streamingAsset: AssetPack) {
-		this.dataManager = dataManager;
+	public function new(gameAsset:AssetPack, streamingAsset: AssetPack) {
+		super(gameAsset, null);
+		
 		this.streamingAsset = streamingAsset;
-		
-		this.currentRoom = 1;
-		this.tileList = new Map<TileType, Texture>();
-		this.tileGrid = new Array<Array<PlatformTile>>();
-		
-		this.allTiles = new Array<PlatformTile>();
-		this.gameAsset = dataManager.gameAsset;
-		
-		this.didWin = false;
-		this.isGameOver = false;
-		
 		sharedInstance = this;
 		
-		InitTileTypes();
-		LoadRoomData(currentRoom);
+		curRoomIndx = 1;
+		
+		tileTextures = new Map<Int, Texture>();
+		obstacleTextures = new Map<Int, Texture>();
+		doorTextures = new Map<Int, Texture>();
+		
+		tileGrid = new Array<Array<PlatformTile>>();
+		allTiles = new Array<PlatformTile>();
+		
+		levelEntity = new Entity();
+		layerEntity = new Entity();
+		
+		bgEntity = new Entity();
+		blocksEntity = new Entity();
+		obstaclesEntity = new Entity();
+		doorsEntity = new Entity();
+		
+		heroEntity = new Entity();
+		
+		initTextures();
 	}
 	
-	public function InitTileTypes(): Void {
-		tileList = new Map<TileType, Texture>();
+	public function initTextures(): Void {
+		tileTextures = new Map<Int, Texture>();
 		
 		var tileTexture: Texture = gameAsset.getTexture(AssetName.ASSET_TILES);
-		var tileDataFile: File = streamingAsset.getFile(TILE_DATA_PATH + DATA_EXT);
-		var tileDataJson: TileFormat = Json.parse(tileDataFile.toString());
-		var tileData: Array<Array<Int>> = tileDataJson.TILE_DATA;
+		var tiles: Array<SubTexture> = tileTexture.split(
+			Std.int(tileTexture.width / GameConstants.TILE_WIDTH),
+			Std.int(tileTexture.height / GameConstants.TILE_HEIGHT)
+		);
 		
-		for (i in 0...tileData.length) {
-			var tileType: TileType = Type.allEnums(TileType)[i + 1];
-			tileList.set(
-				tileType,
-				tileTexture.subTexture(tileData[i][0], tileData[i][1], tileData[i][2], tileData[i][3])
-			);
+		for (i in 0...tiles.length) {
+			tileTextures.set(i + 1, tiles[i]);
 		}
 		
-		tileList.set(TileType.SPIKE_UP, gameAsset.getTexture(AssetName.ASSET_SPIKE_UP));
-		tileList.set(TileType.SPIKE_DOWN, gameAsset.getTexture(AssetName.ASSET_SPIKE_DOWN));
-		tileList.set(TileType.DOOR_IN, gameAsset.getTexture(AssetName.ASSET_DOOR_CLOSE));
-		tileList.set(TileType.DOOR_OUT, gameAsset.getTexture(AssetName.ASSET_DOOR_OPEN));
+		obstacleTextures = new Map<Int, Texture>();
+		obstacleTextures.set(1, gameAsset.getTexture(AssetName.ASSET_SPIKE_UP));
+		obstacleTextures.set(2, gameAsset.getTexture(AssetName.ASSET_SPIKE_DOWN));
+		
+		doorTextures = new Map<Int, Texture>();
+		doorTextures.set(1, gameAsset.getTexture(AssetName.ASSET_DOOR_CLOSE));
+		doorTextures.set(2, gameAsset.getTexture(AssetName.ASSET_DOOR_OPEN));
 	}
 	
-	public function LoadRoomData(roomIndx: Int = 1): Void {
+	public function readRoomData(roomIndx: Int = 1): Void {
 		if (roomIndx == 0 || roomIndx > ROOM_MAX)
 			return;
 		
-		currentRoom = roomIndx;
-		var roomFile: File = streamingAsset.getFile(ROOM_DATA_PATH + Std.string(currentRoom) + DATA_EXT);
+		Utils.consoleLog("Reading room data " + roomIndx);
+		
+		var roomFile: File = streamingAsset.getFile(ROOM_DATA_PATH + Std.int(roomIndx) + ROOM_DATA_EXT);
 		roomDataJson = Json.parse(roomFile.toString());
+		//roomFile.dispose();
+		
+		curRoomIndx = roomIndx;
 	}
 	
-	public function LoadPrevRoom(): Void {
-		var curRoomIndx: Int = currentRoom;
-		curRoomIndx--;
+	public function loadRoom(roomIndx: Int = 1): Void {			
+		Utils.consoleLog("Loading room " + roomIndx);
 		
-		if (curRoomIndx <= 0)
+		resetTiles();
+		
+		readRoomData(roomIndx);
+		createRoomBackground();
+		createRoomBlocks();
+		createRoomObstacles();
+		createRoomDoors();
+		setTileLayer();
+		drawLevelTiles();
+		
+		createPlatformHero();
+	}
+	
+	public function loadPrevRoom(): Void {
+		var curIndx: Int = curRoomIndx;
+		curIndx--;
+		
+		if (curIndx <= 0)
 			return;
-		
-		ClearStage();
-		LoadRoom(curRoomIndx);
+			
+		clearStage();
+		loadRoom(curIndx);
 	}
 	
-	public function LoadNextRoom(): Void {
-		var curRoomIndx: Int = currentRoom;
-		curRoomIndx++;
+	public function loadNextRoom(): Void {
+		var curIndx: Int = curRoomIndx;
+		curIndx++;
 		
-		if (curRoomIndx > ROOM_MAX) {
-			Utils.ConsoleLog("WIN!");
-			OnGameEnd(true);
+		if (curIndx > ROOM_MAX) {
+			Utils.consoleLog("WIN!");
 			return;
 		}
-	
-		ClearStage();
-		LoadRoom(curRoomIndx);
+		
+		clearStage();
+		loadRoom(curIndx);
 	}
 	
-	public function ReloadRoom(): Void {
-		// Load character only
-		//owner.removeChild(heroEntity);
-		//CreatePlatformHero();
-		
-		// Load the whole stage
-		ClearStage();
-		LoadRoom(currentRoom);
-	}
-	
-	public function LoadRoom(roomIndx: Int = 1): Void {
-		if (allTiles.length > 0)
-			return;
-		
-		ResetRoomTiles();
-		LoadRoomData(roomIndx);
-		CreateRoomBackground();
-		CreateRoomBlocks();
-		CreateRoomObstacles();
-		CreateRoomDoors();
-		SetBlockLayer();
-		
-		CreatePlatformHero();
-		ShowScreenCurtain();
-		ShowFPS();
-	}
-	
-	public function CreatePlatformHero(): Void {
+	public function createPlatformHero(): Void {
+		var doorIn: PlatformTile = getTileOfType(TileType.DOOR_IN);
 		if (doorIn == null) {
-			Utils.ConsoleLog("Door IN not specified!");
+			Utils.consoleLog("Door In not specified!");
 			return;
 		}
 		
 		heroEntity = new Entity();
-		
 		platformHero = new PlatformHero(gameAsset);
-		platformHero.SetParent(owner);
-		platformHero.SetXY(doorIn.x._, doorIn.y._);
-		platformHero.SetSize(GameConstants.TILE_WIDTH, GameConstants.TILE_HEIGHT);
-		platformDisposer.add(platformHero.onTileChanged.connect(function(tile: PlatformTile) {
-			if (isGameOver)
-				return;
-			
-			if (tile.GetTileDataType() == TileDataType.DOOR && tile.tileType == TileType.DOOR_OUT) {
-				Utils.ConsoleLog("EXIT!");
-				//LoadNextRoom();
-			}
-			
-			// Restart Level
-			if (tile.idy == (GameConstants.GRID_COLS - 1) || tile.GetTileDataType() == TileDataType.OBSTACLE) {
-				Utils.ConsoleLog("LOSE! " + tile.GetTileDataType() + " " + tile.GridIDToString());
-				PlayHeroDeathAnim();
-
-				//OnGameEnd(false);
-				//ReloadRoom();
-			}
-		}));
+		platformHero.setXY(doorIn.x._, doorIn.y._);
+		platformHero.setSize(GameConstants.TILE_WIDTH, GameConstants.TILE_HEIGHT);
+		platformHero.setColliderOffset(13, 17);
 		heroEntity.add(platformHero);
 		
-		platformHeroControl = new PlatformHeroControl();
-		platformHeroControl.SetHeroDirection((roomDataJson.Hero_Direction == 1) ? HeroDirection.RIGHT : HeroDirection.LEFT);
-		heroEntity.add(platformHeroControl);
-		
+		heroControl = new HeroControl();
+		heroEntity.add(heroControl);
+	
 		owner.addChild(heroEntity);
 	}
 	
-	public function PlayHeroDeathAnim(): Void {
+	public function createRoomTiles(): Void {
+		tileGrid = new Array<Array<PlatformTile>>();
+		
+		for (ii in 0...GameConstants.GRID_ROWS) {
+			var tileArray: Array<PlatformTile> = new Array<PlatformTile>();
+			for (jj in 0...GameConstants.GRID_COLS) {
+				var tile: PlatformTile = new PlatformTile();
+				tile.setSize(GameConstants.TILE_WIDTH, GameConstants.TILE_HEIGHT);
+				tile.setColliderOffset(tile.getNaturalWidth() / 2, tile.getNaturalHeight() / 2);
+				
+				tile.setXY(
+					ii * tile.getNaturalWidth() + (GameConstants.TILE_WIDTH / 2),
+					jj * tile.getNaturalHeight() + (GameConstants.TILE_HEIGHT / 2)
+				);
+				
+				tileArray.push(tile);
+			}
+			tileGrid.push(tileArray);
+		}
+	}
+	
+	public function createRoomBackground(): Void {
+		if (tileGrid == null)
+			return;
+			
+		bgEntity = new Entity();
+		var bgData: Array<Array<Int>> = roomDataJson.Background_Data;
+		for (ii in 0...bgData.length) {
+			for (jj in 0 ...bgData[ii].length) {
+				var value: Int = bgData[jj][ii];
+				if (value == 0)
+					continue;
+					
+				var tileTexture: Texture = tileTextures.get(value);
+				var tile: PlatformTile = new PlatformTile(tileTexture);
+				tile.setXY(tileGrid[ii][jj].x._, tileGrid[ii][jj].y._);
+				bgEntity.addChild(new Entity().add(tile));
+				
+				allTiles.push(tile);
+			}
+		}
+		
+		levelEntity.addChild(bgEntity);
+	}
+	
+	public function createRoomBlocks(): Void {
+		if (tileGrid == null)
+			return;
+			
+		blocksEntity = new Entity();
+		var blocksData: Array<Array<Int>> = roomDataJson.Block_Data;
+		for (ii in 0...blocksData.length) {
+			for (jj in 0...blocksData[ii].length) {
+				var value: Int = blocksData[jj][ii];
+				if (value == 0)
+					continue;
+					
+				var tileTexture: Texture = tileTextures.get(value);
+				var tile: PlatformTile = tileGrid[ii][jj];
+				tile.setTexture(tileTexture);
+				tile.setTileType(TileType.BLOCK);
+				blocksEntity.addChild(new Entity().add(tile));
+				
+				allTiles.push(tile);
+			}
+		}
+		
+		levelEntity.addChild(blocksEntity);
+	}
+	
+	public function createRoomObstacles(): Void {
+		if (tileGrid == null)
+			return;
+			
+		obstaclesEntity = new Entity();
+		var obsData: Array<Array<Int>> = roomDataJson.Obstacle_Data;
+		for (ii in 0...obsData.length) {
+			for (jj in 0...obsData[ii].length) {
+				var value: Int = obsData[jj][ii];
+				if (value == 0)
+					continue;
+				
+				var tileTexture: Texture = obstacleTextures.get(value);
+				var tile: PlatformTile = tileGrid[ii][jj];
+				tile.setTexture(tileTexture);
+				if (value == 1) { tile.setTileType(TileType.SPIKE_UP); }
+				else if (value == 2) { tile.setTileType(TileType.SPIKE_DOWN); }
+				obstaclesEntity.addChild(new Entity().add(tile));
+				
+				allTiles.push(tile);
+			}
+		}
+		
+		levelEntity.addChild(obstaclesEntity);
+	}
+	
+	public function createRoomDoors(): Void {
+		if (tileGrid == null)
+			return;
+			
+		doorsEntity = new Entity();
+		var doorData: Array<Array<Int>> = roomDataJson.Door_Data;
+		for (ii in 0...doorData.length) {
+			for (jj in 0...doorData[ii].length) {
+				var value: Int = doorData[jj][ii];
+				if (value == 0)
+					continue;
+					
+				var tileTexture: Texture = doorTextures.get(value);
+				var tile: PlatformTile = tileGrid[ii][jj];
+				tile.setTexture(tileTexture);
+				if (value == 1) { tile.setTileType(TileType.DOOR_IN); }
+				else if (value == 2) { tile.setTileType(TileType.DOOR_OUT); }
+				doorsEntity.addChild(new Entity().add(tile));
+				
+				allTiles.push(tile);
+			}
+		}
+		
+		levelEntity.addChild(doorsEntity);
+	}
+	
+	public function setTileLayer(): Void {
+		if (tileGrid == null)
+			return;
+			
+		var layerData: Array<Array<Int>> = roomDataJson.Layer_Data;
+		for (ii in 0...layerData.length) {
+			for (jj in 0...layerData[ii].length) {
+				var value: Int = layerData[jj][ii];
+				if (value == 0)
+					continue;
+					
+				var tile: PlatformTile = tileGrid[ii][jj];
+				tile.setLayer(value);
+			}
+		}
+	}
+	
+	public function drawLevelTiles(): Void {
+		owner.addChild(levelEntity);
+	}
+	
+	public function clearStage(): Void {
+		Utils.consoleLog("Clearing stage [count:" + allTiles.length + "]");
+		allTiles = new Array<PlatformTile>();
+		
+		owner.removeChild(levelEntity);
+		levelEntity.dispose();
+		
+		owner.removeChild(heroEntity);
+		heroEntity.dispose();
+		
+		owner.removeChild(layerEntity);
+		layerEntity.dispose();
+	}
+	
+	public function resetTiles(): Void {
+		for (ii in 0...tileGrid.length) {
+			for (jj in 0...tileGrid[ii].length) {
+				var tile: PlatformTile = tileGrid[ii][jj];
+				tile.reset();
+				tile.setSize(GameConstants.TILE_WIDTH, GameConstants.TILE_HEIGHT);
+			}
+		}
+	}
+	
+	public function getTileOfType(type: TileType): PlatformTile {
+		for (tile in allTiles) {
+			if (tile.tileType == type) {
+				return tile;
+			}
+		}
+		
+		return null;
+	}
+	
+	public function onGameEnd(win: Bool): Void {
+		didWin = win;
+		SceneManager.showGameOverScreen();
+	}
+	
+	public function playHeroDeathAnim(): Void {
 		isGameOver = true;
-		platformHero.SetDeathPose();
-		platformHeroControl.SetIsKinematic(true);
+		platformHero.setDeathPose();
+		heroControl.dispose();
 		
 		var heroAnim: Script = new Script();
 		heroAnim.run(new Sequence([
 			new AnimateTo(platformHero.y, platformHero.y._ - 30, 0.5, Ease.sineOut),
-			new AnimateTo(platformHero.y, System.stage.height + platformHero.GetNaturalHeight(), 0.5, Ease.sineIn),
+			new AnimateTo(platformHero.y, System.stage.height + platformHero.getNaturalHeight(), 0.5, Ease.sineIn),
 			new CallFunction(function() {
-				OnGameEnd(false);
+				onGameEnd(false);
 				owner.removeChild(new Entity().add(heroAnim));
 				heroAnim.dispose();
 			})
@@ -244,291 +397,41 @@ class PlatformMain extends Component
 		owner.addChild(new Entity().add(heroAnim));
 	}
 	
-	public function OnGameEnd(win: Bool): Void {
-		didWin = win;
-		SceneManager.ShowGameOverScreen();
-		bgSound.dispose();
-	}
-	
-	public function ShowScreenCurtain(): Void {		
-		var screenCurtain: FillSprite = new FillSprite(0x000000, System.stage.width, System.stage.height);
-		owner.addChild(new Entity().add(screenCurtain));
-		platformHeroControl.SetIsKinematic(true);
+	public function showScreenCurtain(): Void {
+		var curtain: FillSprite = new FillSprite(0x000000, System.stage.width, System.stage.height);
+		owner.addChild(new Entity().add(curtain));
 		
 		var curtainScript: Script = new Script();
 		curtainScript.run(new Sequence([
-			new AnimateTo(screenCurtain.alpha, 0, 0.5),
+			new AnimateTo(curtain.alpha, 0, 0.5),
 			new CallFunction(function() {
-				owner.removeChild(new Entity().add(screenCurtain));
-				screenCurtain.dispose();
-				owner.removeChild(new Entity().add(curtainScript));
+				owner.removeChild(new Entity().add(curtain));
+				curtain.dispose();
 				
-				if (currentRoom == 1) {
-					SceneManager.ShowControlsScreen();
+				owner.removeChild(new Entity().add(curtainScript));
+				curtainScript.dispose();
+				
+				if (curRoomIndx == 1) {
+						SceneManager.showControlsScreen();
 				}
-				else {
-					platformHeroControl.SetIsKinematic(false);
-				}
-			})	
+			})
 		]));
 		owner.addChild(new Entity().add(curtainScript));
 	}
 	
-	public function ShowFPS(): Void {
-		if (fpsEntity != null) {
-			owner.removeChild(fpsEntity);
-		}
-		
-		fpsEntity = new Entity()
-			.add(new TextSprite(new Font(gameAsset, FontName.FONT_ARIAL_20))
-			.setXY(2, System.stage.height * 0.975))
-			.add(new FpsDisplay());
-		owner.addChild(fpsEntity);
-	}
-	
-	public function CreateRoomTiles(): Void {
-		tileGrid = new Array<Array<PlatformTile>>();
-		
-		for (ii in 0...GameConstants.GRID_ROWS) {
-			var tileArray: Array<PlatformTile> = new Array<PlatformTile>();
-			for (jj in 0...GameConstants.GRID_COLS) {
-				var tile: PlatformTile = new PlatformTile(null);
-				tile.SetGridID(ii, jj);
-				tile.SetSize(GameConstants.TILE_WIDTH, GameConstants.TILE_HEIGHT);	
-				
-				tile.SetXY(
-					ii * tile.GetNaturalWidth() + (GameConstants.TILE_WIDTH / 2),
-					jj * tile.GetNaturalHeight() + (GameConstants.TILE_HEIGHT / 2)
-				);
-				
-				//owner.addChild(new Entity().add(tile));
-				tileArray.push(tile);
-			}
-			tileGrid.push(tileArray);
-		}
-	}
-	
-	public function ResetRoomTiles(): Void {
-		for (ii in 0...tileGrid.length) {
-			for (jj in 0...tileGrid[ii].length) {
-				tileGrid[ii][jj] = new PlatformTile(null);
-				tileGrid[ii][jj].SetGridID(ii, jj);
-				tileGrid[ii][jj].SetSize(GameConstants.TILE_WIDTH, GameConstants.TILE_HEIGHT);	
-				
-				tileGrid[ii][jj].SetXY(
-					ii * tileGrid[ii][jj].GetNaturalWidth() + (GameConstants.TILE_WIDTH / 2),
-					jj * tileGrid[ii][jj].GetNaturalHeight() + (GameConstants.TILE_HEIGHT / 2)
-				);
-			}
-		}
-	}
-	
-	public function CreateRoomBackground(): Void {
-		var backgroundData: Array<Array<Int>> = roomDataJson.Background_Data;
-		
-		for (ii in 0...backgroundData.length) {
-			for (jj in 0...backgroundData[ii].length) {
-				var backgroundDataVal: Int = backgroundData[jj][ii];
-				
-				if (backgroundDataVal == 0)
-					continue;
-					
-				var backgroundTileType: TileType = GetTileType(backgroundDataVal);
-				var backgroundTexture: Texture = tileList.get(backgroundTileType);
-				var backgroundTile: PlatformBlock = new PlatformBlock(backgroundTexture);
-				backgroundTile.SetGridID(ii, jj);
-				backgroundTile.SetSize(GameConstants.TILE_WIDTH, GameConstants.TILE_HEIGHT);
-				backgroundTile.SetTileType(backgroundTileType);
-				
-				backgroundTile.SetXY(
-					ii * backgroundTile.GetNaturalWidth() + (GameConstants.TILE_WIDTH / 2),
-					jj * backgroundTile.GetNaturalHeight() + (GameConstants.TILE_HEIGHT / 2)
-				);
-				
-				tileGrid[ii][jj] = backgroundTile;
-				owner.addChild(new Entity().add(tileGrid[ii][jj]));
-				allTiles.push(backgroundTile);
-			}
-		}
-	}
-	
-	public function CreateRoomBlocks(): Void {
-		var roomData: Array<Array<Int>> = roomDataJson.Block_Data;
-		
-		for (ii in 0...roomData.length) {
-			for (jj in 0...roomData[ii].length) {
-				var roomDataVal: Int = roomData[jj][ii];
-				
-				if (roomDataVal == 0)
-					continue;
-				
-				var blockTileType: TileType = GetTileType(roomDataVal);
-				var blockTexture: Texture = tileList.get(blockTileType);
-				var blockTile: PlatformBlock = new PlatformBlock(blockTexture);
-				blockTile.SetGridID(ii, jj);
-				blockTile.SetSize(GameConstants.TILE_WIDTH, GameConstants.TILE_HEIGHT);					
-				blockTile.SetTileType(blockTileType);
-				
-				blockTile.SetXY(
-					ii * blockTile.GetNaturalWidth() + (GameConstants.TILE_WIDTH / 2),
-					jj * blockTile.GetNaturalHeight() + (GameConstants.TILE_HEIGHT / 2)
-				);
-				
-				tileGrid[ii][jj] = blockTile;
-				owner.addChild(new Entity().add(tileGrid[ii][jj]));
-				allTiles.push(blockTile);
-			}
-		}
-	}
-	
-	public function CreateRoomObstacles(): Void {
-		var obstacleData: Array<Array<Int>> = roomDataJson.Obstacle_Data;
-		
-		for (ii in 0...obstacleData.length) {
-			for (jj in 0...obstacleData[ii].length) {
-				var obstacleDataVal: Int = obstacleData[jj][ii];
-				
-				if (obstacleDataVal == 0)
-					continue;
-					
-				var obstacleTileType: TileType = GetObstacleTileType(obstacleDataVal);
-				var obstacleTexture: Texture = GetObstacleTexture(obstacleDataVal);
-				var obstacleTile: PlatformObstacle = new PlatformObstacle(obstacleTexture);
-				obstacleTile.SetGridID(ii, jj);
-				obstacleTile.SetSize(GameConstants.TILE_WIDTH, GameConstants.TILE_HEIGHT);
-				obstacleTile.SetTileType(obstacleTileType);
-				
-				obstacleTile.SetXY(
-					ii * obstacleTile.GetNaturalWidth() + (GameConstants.TILE_WIDTH / 2),
-					jj * obstacleTile.GetNaturalHeight() + (GameConstants.TILE_HEIGHT / 2)
-				);
-				
-				tileGrid[ii][jj] = obstacleTile;
-				owner.addChild(new Entity().add(tileGrid[ii][jj]));
-				allTiles.push(obstacleTile);
-			}
-		}
-	}
-	
-	public function CreateRoomDoors(): Void {
-		var doorData: Array<Array<Int>> = roomDataJson.Door_Data;
-		
-		for (ii in 0...doorData.length) {
-			for (jj in 0...doorData[ii].length) {
-				var doorDataVal: Int = doorData[jj][ii];
-				
-				if (doorDataVal == 0)
-					continue;
-			
-				var doorTileType: TileType = GetDoorTileType(doorDataVal);
-				var doorTexture: Texture = GetDoorTexture(doorDataVal);
-				var doorTile: PlatformDoor = new PlatformDoor(doorTexture);
-				doorTile.SetGridID(ii, jj);
-				doorTile.SetSize(GameConstants.TILE_WIDTH, GameConstants.TILE_HEIGHT);				
-				doorTile.SetTileType(doorTileType);
-				
-				doorTile.SetXY(
-					ii * doorTile.GetNaturalWidth() + (GameConstants.TILE_WIDTH / 2),
-					jj * doorTile.GetNaturalHeight() + (GameConstants.TILE_HEIGHT / 2)
-				);
-				
-				if (doorDataVal == 1) {
-					doorIn = doorTile;
-				}
-				
-				if (doorDataVal == 2) {
-					doorOut = doorTile;
-				}
-				
-				tileGrid[ii][jj] = doorTile;
-				owner.addChild(new Entity().add(tileGrid[ii][jj]));
-				allTiles.push(doorTile);
-			}
-		}
-	}
-	
-	public function SetBlockLayer(): Void {
-		var layerData: Array<Array<Int>> = roomDataJson.Layer_Data;
+	public function showTileLayers(): Void {
+		layerEntity = new Entity();
 		
 		for (ii in 0...tileGrid.length) {
 			for (jj in 0...tileGrid[ii].length) {
-				var layer: Int = layerData[jj][ii];
-				var blockTile: PlatformTile = tileGrid[ii][jj];
-				if (blockTile != null) {
-					blockTile.SetTileLayer(layer);
-				}
-			}
-		}
-	}
-	
-	public function GetTileType(indx: Int): TileType {
-		return Type.allEnums(TileType)[indx];
-	}
-	
-	public function GetDoorTexture(indx: Int): Texture {
-		var result: Texture = null;
-		
-		if (indx == 1) {
-			result = gameAsset.getTexture(AssetName.ASSET_DOOR_CLOSE);
-		}
-		else if (indx == 2) {
-			result = gameAsset.getTexture(AssetName.ASSET_DOOR_OPEN);
-		}
-		
-		return result;
-	}
-	
-	public function GetDoorTileType(indx: Int): TileType {
-		var doorType: TileType = TileType.NONE;
-		
-		if (indx == 1) {
-			doorType = TileType.DOOR_IN;
-		}
-		else if (indx == 2) {
-			doorType = TileType.DOOR_OUT;
-		}
-		
-		return doorType;
-	}
-	
-	public function GetObstacleTexture(indx: Int): Texture {
-		var result: Texture = null;
-		
-		if (indx == 1) {
-			result = gameAsset.getTexture(AssetName.ASSET_SPIKE_UP);
-		}
-		else if (indx == 2) {
-			result = gameAsset.getTexture(AssetName.ASSET_SPIKE_DOWN);
-		}
-		
-		return result;
-	}
-	
-	public function GetObstacleTileType(indx: Int): TileType {
-		var obstacleType: TileType = TileType.NONE;
-		
-		if (indx == 1) {
-			obstacleType = TileType.SPIKE_UP;
-		}
-		else if (indx == 2) {
-			obstacleType == TileType.SPIKE_DOWN;
-		}
-		
-		return obstacleType;
-	}
-	
-	public function ClearStage(): Void {		
-		for (tile in allTiles) {
-			if (tile != null) {
-				tile.dispose();
+				var layerText: TextSprite = new TextSprite(new Font(gameAsset, FontName.FONT_ARIAL_20), tileGrid[ii][jj].tileLayer + "");
+				layerText.centerAnchor();
+				layerText.setXY(tileGrid[ii][jj].x._, tileGrid[ii][jj].y._);
+				layerEntity.addChild(new Entity().add(layerText));
 			}
 		}
 		
-		allTiles = new Array<PlatformTile>();
-		roomDataJson = null;
-		
-		owner.removeChild(heroEntity);
-		heroEntity.dispose();
+		owner.addChild(layerEntity);
 	}
 	
 	override public function onAdded() {
@@ -539,37 +442,57 @@ class PlatformMain extends Component
 			owner.add(platformDisposer = new Disposer());
 		}
 		
-		CreateRoomTiles();
-		LoadRoom(currentRoom);
+		createRoomTiles();
+		loadRoom(curRoomIndx);		
+	}
+	
+	override public function onStart() {
+		super.onStart();
 		
-		// Background sound
-		bgSound = gameAsset.getSound(BGM_PATH + BGM_NAME).loop(BGM_VOLUME);
-		platformDisposer.add(bgSound);
-		
-		#if html
 		platformDisposer.add(System.keyboard.down.connect(function(event: KeyboardEvent) {
+			if (event.key == Key.M) {
+				
+			}
+			
 			if (event.key == Key.Number1) {
-				LoadRoom(1);
+				clearStage();
+				loadRoom(1);
 			}
 			if (event.key == Key.Number2) {
-				LoadRoom(2);
+				clearStage();
+				loadRoom(2);
 			}
 			if (event.key == Key.Number3) {
-				LoadRoom(3);
+				clearStage();
+				loadRoom(3);
 			}
 			if (event.key == Key.Number4) {
-				LoadRoom(4);
+				clearStage();
+				loadRoom(4);
 			}
 			if (event.key == Key.Number5) {
-				LoadRoom(5);
-			}
-			if (event.key == Key.F1) {
-				LoadPrevRoom();
+				clearStage();
+				loadRoom(5);
 			}
 			if (event.key == Key.F2) {
-				LoadNextRoom();
+				loadPrevRoom();
+			}
+			if (event.key == Key.F3) {
+				loadNextRoom();
+			}
+			if (event.key == Key.F4) {
+				clearStage();
+				resetTiles();
+			}
+			if (event.key == Key.F5) {
+				showTileLayers();
 			}
 		}));
-		#end
 	}
+	
+	//override public function onUpdate(dt:Float) {
+		//super.onUpdate(dt);
+		//Utils.consoleLog(ElementCollider.intersect(platformHero.
+		//Utils.consoleLog(ElementCollider.hasCollidedWith(platformHero.hasCollidedWith(getTileOfType(TileType.DOOR, TileID.DOOR_IN)) + "");
+	//}
 }

@@ -1,6 +1,7 @@
 package platformer.screen.main;
 
 import flambe.asset.AssetPack;
+import flambe.display.FillSprite;
 import flambe.display.ImageSprite;
 import flambe.display.Texture;
 import flambe.Entity;
@@ -14,10 +15,10 @@ import flambe.subsystem.StorageSystem;
 import flambe.System;
 
 import platformer.core.SceneManager;
-import platformer.main.PlatformMain;
 import platformer.name.AssetName;
 import platformer.name.ScreenName;
 import platformer.screen.GameScreen;
+import platformer.main.PlatformMain;
 
 /**
  * ...
@@ -25,49 +26,49 @@ import platformer.screen.GameScreen;
  */
 class GameOverScreen extends GameScreen
 {
-	public function new(assetPack: AssetPack, storage: StorageSystem) {		
-		super(assetPack, storage);
+	private static inline var DEFAULT_BG_COLOR: Int = 0xFFFFFF;
+	
+	public function new(gameAsset:AssetPack, gameStorage:StorageSystem) {
+		super(gameAsset, gameStorage);
 	}
 	
-	override public function CreateScreen():Entity {
-		screenEntity = super.CreateScreen();
-		screenBackground.color = 0xFFFFFF;
-		screenBackground.alpha.animate(0, 0.5, 0.5);
-		HideTitleText();
-		//HideBackground();
+	override public function createScreen():Entity {
+		screenEntity = super.createScreen();
+		screenTemplate.dispose();
 		
-		var platformMain: PlatformMain = SceneManager.instance.gameDirector.topScene.get(PlatformMain);
-		if (platformMain != null) {
-			var titleTexture: Texture = (platformMain.didWin) ? gameAsset.getTexture(AssetName.ASSET_GAME_WIN) : gameAsset.getTexture(AssetName.ASSET_GAME_OVER);
-			var title: ImageSprite = new ImageSprite(titleTexture);
-			title.centerAnchor();
-			title.setXY(System.stage.width / 2, System.stage.height * 0.3);
-			AddToEntity(title);
-		}
+		screenBackground = new FillSprite(DEFAULT_BG_COLOR, screenWidth, screenHeight);
+		screenBackground.alpha.animate(0, 0.5, 0.5);
+		addToEntity(screenBackground);
+		
+		var titleTexture: Texture = (PlatformMain.sharedInstance.didWin) ? gameAsset.getTexture(AssetName.ASSET_GAME_WIN) : gameAsset.getTexture(AssetName.ASSET_GAME_OVER);
+		var title: ImageSprite = new ImageSprite(titleTexture);
+		title.centerAnchor();
+		title.setXY(screenWidth / 2, screenHeight * 0.3);
+		addToEntity(title);
 		
 		var spaceToMenu: ImageSprite = new ImageSprite(gameAsset.getTexture(AssetName.ASSET_GAME_MENU));
 		spaceToMenu.centerAnchor();
-		spaceToMenu.setXY(System.stage.width / 2, System.stage.height * 0.7);
-		AddToEntity(spaceToMenu);
+		spaceToMenu.setXY(screenWidth / 2, screenHeight * 0.7);
+		addToEntity(spaceToMenu);
 		
 		var blinkScript: Script = new Script();
 		blinkScript.run(new Repeat(new Sequence([
 			new AnimateTo(spaceToMenu.alpha, 0.25, 0.5),
 			new AnimateTo(spaceToMenu.alpha, 1, 0.5)
 		])));
-		AddToEntity(blinkScript);
+		addToEntity(blinkScript);
 		
 		screenDisposer.add(System.keyboard.up.connect(function(event: KeyboardEvent) {
 			if (event.key == Key.Space) {
-				SceneManager.UnwindToCurScene();
-				SceneManager.ShowTitleScreen();
+				SceneManager.unwindToCurScene();
+				SceneManager.showTitleScreen();
 			}
 		}));
 		
 		return screenEntity;
 	}
 	
-	override public function GetScreenName(): String {
+	override public function getScreenName():String {
 		return ScreenName.SCREEN_GAME_OVER;
 	}
 }

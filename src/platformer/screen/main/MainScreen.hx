@@ -2,20 +2,22 @@ package platformer.screen.main;
 
 import flambe.asset.AssetPack;
 import flambe.display.ImageSprite;
-import flambe.display.TextSprite;
 import flambe.Entity;
 import flambe.input.Key;
 import flambe.input.KeyboardEvent;
 import flambe.subsystem.StorageSystem;
 import flambe.System;
+import platformer.main.PlatformMain;
 
 import platformer.core.SceneManager;
-import platformer.main.PlatformMain;
 import platformer.main.utils.GameConstants;
 import platformer.name.AssetName;
 import platformer.name.ScreenName;
-import platformer.screen.GameButton;
 import platformer.screen.GameScreen;
+import flambe.util.Promise;
+import flambe.asset.Manifest;
+
+import platformer.pxlsq.Utils;
 
 /**
  * ...
@@ -23,44 +25,48 @@ import platformer.screen.GameScreen;
  */
 class MainScreen extends GameScreen
 {
+	private static inline var STREAMING_ASSETS_PACK: String = "streamingassets";
+	
 	public var platformMain(default, null): PlatformMain;
 	
-	private var gamePauseBtn: GameButton;
-	private var scoreText: TextSprite;
-	
-	public static inline var STREAMING_ASSET_PACK: String = "streamingassets";
-	
-	public function new(assetPack: AssetPack, storage: StorageSystem) {		
-		super(assetPack, storage);
+	public function new(gameAsset:AssetPack, gameStorage:StorageSystem) {
+		super(gameAsset, gameStorage);
 	}
 	
-	override public function CreateScreen(): Entity {
-		screenEntity = super.CreateScreen();
-		HideTitleText();
-
+	public function initPlatformMain() {
+		var promise: Promise<AssetPack> = System.loadAssetPack(Manifest.fromAssets(STREAMING_ASSETS_PACK));
+		promise.get(function(streamingAssetsPack: AssetPack) {
+			Utils.consoleLog("Streaming asset loaded!");
+			SceneManager.showMainScreen();
+			
+			platformMain = new PlatformMain(gameAsset, streamingAssetsPack);
+			addToEntity(platformMain);
+		});
+		
+		SceneManager.showScreen(new PreloadScreen(gameAsset, promise));
+	}
+	
+	override public function createScreen():Entity {
+		screenEntity = super.createScreen();
+		screenTemplate.dispose();
+		
 		var background: ImageSprite = new ImageSprite(gameAsset.getTexture(AssetName.ASSET_BACKGROUND));
 		background.centerAnchor();
-		background.setXY(System.stage.width / 2, System.stage.height / 2);
+		background.setXY(screenWidth / 2, screenHeight / 2);
 		background.setScaleXY(
-			(System.stage.width / background.getNaturalWidth()) / 2 + (GameConstants.GAME_WIDTH / background.getNaturalWidth()) / 2,
-			(System.stage.height / background.getNaturalHeight()) / 2 + (GameConstants.GAME_HEIGHT / background.getNaturalHeight()) / 2
+			screenWidth / background.getNaturalWidth()  / 2 + GameConstants.GAME_WIDTH / background.getNaturalWidth() / 2,
+			screenHeight / background.getNaturalHeight() / 2 + GameConstants.GAME_HEIGHT / background.getNaturalHeight() / 2
 		);
-		AddToEntity(background);
+		addToEntity(background);
 		
-		//var promise: Promise<AssetPack> = System.loadAssetPack(Manifest.fromAssets(STREAMING_ASSET_PACK));
-		//promise.get(function(streamingAsset: AssetPack) {
-			//Utils.ConsoleLog("Streaming Asset loaded!");
-			//
-		//});
-		
-		#if html
+		#if debug
 		screenDisposer.add(System.keyboard.up.connect(function(event: KeyboardEvent) {
 			if (event.key == Key.P) {
-				SceneManager.ShowControlsScreen();
+				SceneManager.showControlsScreen();
 			}
 			
 			if (event.key == Key.G) {
-				SceneManager.ShowGameOverScreen();
+				SceneManager.showGameOverScreen();
 			}
 		}));
 		#end
@@ -68,12 +74,7 @@ class MainScreen extends GameScreen
 		return screenEntity;
 	}
 	
-	public function InitPlatformMain(streamingAsset: AssetPack) {
-		platformMain = new PlatformMain(this, streamingAsset);
-		screenEntity.add(platformMain);
-	}
-	
-	override public function GetScreenName(): String {
+	override public function getScreenName():String {
 		return ScreenName.SCREEN_MAIN;
 	}
 }

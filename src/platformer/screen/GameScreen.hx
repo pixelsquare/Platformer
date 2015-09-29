@@ -2,6 +2,7 @@ package platformer.screen;
 
 import flambe.asset.AssetPack;
 import flambe.Component;
+import flambe.debug.FpsDisplay;
 import flambe.display.FillSprite;
 import flambe.display.Font;
 import flambe.display.TextSprite;
@@ -13,84 +14,87 @@ import flambe.System;
 
 import platformer.core.DataManager;
 import platformer.name.FontName;
-import platformer.pxlSq.Utils;
+import platformer.pxlsq.Utils;
 
 /**
  * ...
  * @author Anthony Ganzon
  */
 class GameScreen extends DataManager
-{	
+{
 	public var screenEntity(default, null): Entity;
 	
 	private var screenScene: Scene;
 	private var screenDisposer: Disposer;
 	
+	private var screenTemplate: Entity;
 	private var screenBackground: FillSprite;
 	private var screenTitleText: TextSprite;
 	
+	private var fpsEntity: Entity;
+	
+	private var screenWidth: Int;
+	private var screenHeight: Int;
+	
 	private static inline var DEFAULT_BG_COLOR: Int = 0x202020;
 	
-	public function new(assetPack: AssetPack, storage: StorageSystem) {		
-		super(assetPack, storage);
+	public function new(gameAsset:AssetPack, gameStorage:StorageSystem) {
+		super(gameAsset, gameStorage);
 	}
 	
-	public function CreateScreen(): Entity {
+	public function createScreen(): Entity {
 		screenEntity = new Entity()
 			.add(screenScene = new Scene(false))
 			.add(screenDisposer = new Disposer());
 			
-		screenBackground = new FillSprite(DEFAULT_BG_COLOR, System.stage.width, System.stage.height);
-		AddToEntity(screenBackground);
+		screenWidth = System.stage.width;
+		screenHeight = System.stage.height;
 		
-		var screenTitleFont: Font = new Font(gameAsset, FontName.FONT_VANADINE_32);
-		screenTitleText = new TextSprite(screenTitleFont, GetScreenName());
+		screenTemplate = new Entity();
+		screenBackground = new FillSprite(DEFAULT_BG_COLOR, screenWidth, screenHeight);
+		screenTemplate.add(screenBackground);
+		
+		screenTitleText = new TextSprite(new Font(gameAsset, FontName.FONT_VANADINE_32), getScreenName());
 		screenTitleText.centerAnchor();
-		screenTitleText.setXY(
-			System.stage.width / 2,
-			System.stage.height / 2
-		);
-		AddToEntity(screenTitleText);
+		screenTitleText.setXY(screenWidth / 2, screenHeight / 2);
+		screenTemplate.add(screenTitleText);
+		
+		screenEntity.addChild(screenTemplate);		
 		
 		return screenEntity;
 	}
 	
-	public function ShowScreen(): Void { }
-	
-	public function HideScreen(): Void { }
-	
-	public function GetScreenName(): String {
+	public function getScreenName(): String {
 		return "";
 	}
 	
-	private function HideBackground(): Void {
-		screenBackground.visible = false;
+	public function displayFPS(): Void {
+		fpsEntity = new Entity();
+		fpsEntity.add(new TextSprite(new Font(gameAsset, FontName.FONT_ARIAL_20)));
+		fpsEntity.add(new FpsDisplay());
+		screenEntity.addChild(fpsEntity);
 	}
 	
-	private function HideTitleText(): Void {
-		screenTitleText.visible = false;
-	}
-	
-	public function AddToEntity(component: Component, append: Bool = true): Void {
+	public function addToEntity(component: Component, append: Bool = true): Void {
 		if (component == null) {
-			Utils.ConsoleLog("Cannot add nulled components. [" + component.name + "]");
+			Utils.consoleLog("Cannot append nulled components. [" + component.name + "]");
 			return;
 		}
 		
 		screenEntity.addChild(new Entity().add(component), append);
 	}
 	
-	public function RemoveEntity(component: Component): Void {
+	public function removeEntity(component: Component): Void {
 		if (component == null) {
-			Utils.ConsoleLog("Cannot remove nulled components. [" + component.name + "]");
+			Utils.consoleLog("Cannot remove nulled components. [" + component.name + "]");
 			return;
 		}
 		
 		screenEntity.removeChild(new Entity().add(component));
 	}
 	
-	public function RemoveAndDispose(component: Component): Void {
-		RemoveEntity(component);
+	public function removeAndDispose(component: Component): Void {
+		removeEntity(component);
 		component.dispose();
 	}
 }
