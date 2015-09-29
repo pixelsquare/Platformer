@@ -12,6 +12,7 @@ import flambe.script.Script;
 import flambe.script.Sequence;
 import flambe.subsystem.StorageSystem;
 import flambe.System;
+import platformer.main.PlatformMain;
 
 import platformer.core.SceneManager;
 import platformer.name.AssetName;
@@ -58,6 +59,7 @@ class ControlsScreen extends GameScreen
 		screenDisposer.add(System.keyboard.up.connect(function(event: KeyboardEvent) {
 			if (event.key == Key.Space) {
 				SceneManager.unwindToCurScene();
+				PlatformMain.sharedInstance.isGameStart = true;
 			}
 		}));
 		

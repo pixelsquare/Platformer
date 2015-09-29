@@ -226,6 +226,9 @@ class HeroControl extends Component
 		}
 		
 		heroDisposer.add(System.keyboard.down.connect(function(event: KeyboardEvent) {
+			if (!PlatformMain.sharedInstance.isGameStart)
+				return;
+			
 			if (event.key == Key.Space) {
 				if (heroVelocity.y != 0)
 					return;
@@ -234,10 +237,20 @@ class HeroControl extends Component
 				isHeroGrounded = false;
 			}
 			
-			if (event.key == Key.W) {
+			if (event.key == Key.W || event.key == Key.Up) {
 				if (tileGrid[baseRow][baseCol].tileType == TileType.DOOR_OUT) {
 					PlatformMain.sharedInstance.loadNextRoom();
 				}
+			}
+			
+			if ((System.keyboard.isDown(Key.A) && event.key == Key.D) ||
+				(System.keyboard.isDown(Key.Left) && event.key == Key.Right)){
+				platformHero.scaleX._ = Math.abs(platformHero.scaleX._);
+			}
+			
+			if ((System.keyboard.isDown(Key.D) && event.key == Key.A) ||
+				(System.keyboard.isDown(Key.Right) && event.key == Key.Left)){
+				platformHero.scaleX._ = -Math.abs(platformHero.scaleX._);
 			}
 		}));
 		
@@ -247,32 +260,38 @@ class HeroControl extends Component
 	
 	override public function onUpdate(dt:Float) {
 		super.onUpdate(dt);
+		
+		if (!PlatformMain.sharedInstance.isGameStart)
+				return;
 			
 		heroVelocity.x = 0; 
 		//heroVelocity.y = 0;
 		isHeroRunning = false;
 		
-		if (System.keyboard.isDown(Key.D)) {
+		if ((System.keyboard.isDown(Key.D) && !System.keyboard.isDown(Key.A)) || 
+			(System.keyboard.isDown(Key.Right) && !System.keyboard.isDown(Key.Left))) {
 			heroVelocity.x = HERO_SPEED;
 			platformHero.scaleX._ = Math.abs(platformHero.scaleX._);
 			isHeroRunning = true;
 		}
 		
-		if (System.keyboard.isDown(Key.A)) {
+		if ((System.keyboard.isDown(Key.A) && !System.keyboard.isDown(Key.D)) || 
+			(System.keyboard.isDown(Key.Left) && !System.keyboard.isDown(Key.Right))) {
 			heroVelocity.x = -HERO_SPEED;
 			platformHero.scaleX._ = -Math.abs(platformHero.scaleX._);
 			isHeroRunning = true;
 		}
 		
-		if (System.keyboard.isDown(Key.S)) {
-			heroVelocity.y = HERO_SPEED;
-		}
+		//if (System.keyboard.isDown(Key.S)) {
+			//heroVelocity.y = HERO_SPEED;
+		//}
+		//
+		//if (System.keyboard.isDown(Key.W)) {
+			//heroVelocity.y = -HERO_SPEED;
+		//}
 		
-		if (System.keyboard.isDown(Key.W)) {
-			heroVelocity.y = -HERO_SPEED;
-		}
-		
-		if (System.keyboard.isDown(Key.A) && System.keyboard.isDown(Key.D)) {
+		if ((System.keyboard.isDown(Key.A) && System.keyboard.isDown(Key.D)) ||
+			(System.keyboard.isDown(Key.Left) && System.keyboard.isDown(Key.Right))){
 			heroVelocity.x = 0;
 		}
 		
@@ -280,6 +299,9 @@ class HeroControl extends Component
 		applyGravity(dt);
 		//collisionDetection(dt);
 		collisionDetection2(dt);
+		
+		// Clamp velocity to 80% of the total gravity to prevent overshoot
+		heroVelocity.y = FMath.clamp(heroVelocity.y, -GameConstants.GRAVITY * 0.8, GameConstants.GRAVITY * 0.8);
 		
 		platformHero.x._ += heroVelocity.x * dt;	
 		platformHero.y._ += heroVelocity.y * dt;	
@@ -291,5 +313,7 @@ class HeroControl extends Component
 		if (heroFallOutOfBounds() || hasCollidedWithObstacle(TileType.SPIKE_DOWN) || hasCollidedWithObstacle(TileType.SPIKE_UP)) {
 			PlatformMain.sharedInstance.playHeroDeathAnim();
 		}
+		
+		//Utils.consoleLog(heroVelocity.y);
 	}
 }

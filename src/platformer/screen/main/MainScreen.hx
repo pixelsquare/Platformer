@@ -33,7 +33,7 @@ class MainScreen extends GameScreen
 		super(gameAsset, gameStorage);
 	}
 	
-	public function initPlatformMain() {
+	public function initPlatformMain(): Void {
 		var promise: Promise<AssetPack> = System.loadAssetPack(Manifest.fromAssets(STREAMING_ASSETS_PACK));
 		promise.get(function(streamingAssetsPack: AssetPack) {
 			Utils.consoleLog("Streaming asset loaded!");
@@ -44,6 +44,14 @@ class MainScreen extends GameScreen
 		});
 		
 		SceneManager.showScreen(new PreloadScreen(gameAsset, promise));
+	}
+	
+	public function disposePlatformMain(): Void {
+		if (platformMain == null)
+			return;
+			
+		platformMain.dispose();
+		platformMain = null;
 	}
 	
 	override public function createScreen():Entity {

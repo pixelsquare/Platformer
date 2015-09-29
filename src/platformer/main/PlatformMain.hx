@@ -44,6 +44,7 @@ class PlatformMain extends DataManager
 	public var tileGrid(default, null): Array<Array<PlatformTile>>;
 	public var allTiles(default, null): Array<PlatformTile>;
 	
+	public var isGameStart: Bool;
 	public var isGameOver(default, null): Bool;
 	public var didWin(default, null): Bool;
 	
@@ -88,6 +89,10 @@ class PlatformMain extends DataManager
 		
 		tileGrid = new Array<Array<PlatformTile>>();
 		allTiles = new Array<PlatformTile>();
+		
+		isGameStart = false;
+		isGameOver = false;
+		didWin = false;
 		
 		levelEntity = new Entity();
 		layerEntity = new Entity();
@@ -151,6 +156,7 @@ class PlatformMain extends DataManager
 		drawLevelTiles();
 		
 		createPlatformHero();
+		showScreenCurtain();
 	}
 	
 	public function loadPrevRoom(): Void {
@@ -170,6 +176,7 @@ class PlatformMain extends DataManager
 		
 		if (curIndx > ROOM_MAX) {
 			Utils.consoleLog("WIN!");
+			onGameEnd(true);
 			return;
 		}
 		
@@ -401,6 +408,7 @@ class PlatformMain extends DataManager
 		var curtain: FillSprite = new FillSprite(0x000000, System.stage.width, System.stage.height);
 		owner.addChild(new Entity().add(curtain));
 		
+		isGameStart = false;
 		var curtainScript: Script = new Script();
 		curtainScript.run(new Sequence([
 			new AnimateTo(curtain.alpha, 0, 0.5),
@@ -412,7 +420,10 @@ class PlatformMain extends DataManager
 				curtainScript.dispose();
 				
 				if (curRoomIndx == 1) {
-						SceneManager.showControlsScreen();
+					SceneManager.showControlsScreen();
+				}
+				else {
+					isGameStart = true;
 				}
 			})
 		]));
@@ -489,10 +500,4 @@ class PlatformMain extends DataManager
 			}
 		}));
 	}
-	
-	//override public function onUpdate(dt:Float) {
-		//super.onUpdate(dt);
-		//Utils.consoleLog(ElementCollider.intersect(platformHero.
-		//Utils.consoleLog(ElementCollider.hasCollidedWith(platformHero.hasCollidedWith(getTileOfType(TileType.DOOR, TileID.DOOR_IN)) + "");
-	//}
 }

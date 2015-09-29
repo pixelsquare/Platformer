@@ -5,13 +5,13 @@ description: A Platformer game.
 # Information about the game developer.
 developer:
   name: PixelSquare
-  url: https://github.com/pixelsquare
+  url: https://github.com/pixelsquare/
 
 # The game's unique identifier.
 id: com.pixelsquare.platformer
 
 # The game's version string.
-version: 1.0.0
+version: 2.0.0
 
 # The main class name.
 main: platformer.Main

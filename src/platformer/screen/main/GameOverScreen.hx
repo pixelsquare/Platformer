@@ -62,6 +62,7 @@ class GameOverScreen extends GameScreen
 			if (event.key == Key.Space) {
 				SceneManager.unwindToCurScene();
 				SceneManager.showTitleScreen();
+				SceneManager.getMainScreen().disposePlatformMain();
 			}
 		}));
 		
