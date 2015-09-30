@@ -12,6 +12,8 @@ import platformer.main.tile.PlatformTile;
 import platformer.main.tile.utils.TileType;
 import platformer.main.utils.GameConstants;
 
+import platformer.pxlsq.Utils;
+
 /**
  * ...
  * @author Anthony Ganzon
@@ -56,6 +58,10 @@ class HeroControl extends Component
 	
 	public function ignoreLayer(tile: PlatformTile): Bool {
 		return heroLayer == tile.tileLayer;
+	}
+	
+	public function compareLayer(tileA: PlatformTile, tileB: PlatformTile): Bool {
+		return tileA.tileLayer == tileB.tileLayer;
 	}
 	
 	public function isBlockedBy(tile: PlatformTile): Bool {
@@ -140,7 +146,7 @@ class HeroControl extends Component
 		if (heroVelocity.x > 0) {
 			if (rowMax <= GameConstants.GRID_ROWS - 1 && colMin >= 0 && colMax <= GameConstants.GRID_COLS - 1 && rowMaxOverlap == 0 && ignoreLayer(tileGrid[baseRow + 1][baseCol]) && 
 				(isBlock(tileGrid[baseRow + 1][baseCol]) || isBlock(tileGrid[baseRow + 1][colMin]) || (isBlock(tileGrid[baseRow + 1][colMax]) && !isHeroGrounded)) &&
-				(isBlockedBy(tileGrid[rowMax][baseCol]) || isBlockedBy(tileGrid[rowMax][colMin]) || (isBlockedBy(tileGrid[rowMax][colMax]) && !isHeroGrounded))) {
+				(isBlockedBy(tileGrid[rowMax][baseCol]) || isBlockedBy(tileGrid[rowMax][colMin]) || isBlockedBy(tileGrid[rowMax][colMax]))) {
 				platformHero.x._ = (baseRow * GameConstants.TILE_WIDTH) + (GameConstants.TILE_WIDTH - platformHero.colliderOffset.x);
 				heroVelocity.x = 0;
 			}
@@ -152,22 +158,22 @@ class HeroControl extends Component
 
 			if (rowMin >= 0 && colMin >= 0 && colMax <= GameConstants.GRID_COLS - 1 && baseRow > 0 && rowMinOverlap == 0 && ignoreLayer(tileGrid[baseRow - 1][baseCol]) &&
 				(isBlock(tileGrid[baseRow - 1][baseCol]) || isBlock(tileGrid[baseRow - 1][colMin]) || (isBlock(tileGrid[baseRow - 1][colMax]) && !isHeroGrounded)) &&
-				(isBlockedBy(tileGrid[rowMin][baseCol]) || isBlockedBy(tileGrid[rowMin][colMin]) || (isBlockedBy(tileGrid[rowMin][colMax]) && !isHeroGrounded))) {
+				(isBlockedBy(tileGrid[rowMin][baseCol]) || isBlockedBy(tileGrid[rowMin][colMin]) || isBlockedBy(tileGrid[rowMin][colMax]))) {
 				platformHero.x._ = ((baseRow + 1) * GameConstants.TILE_WIDTH) - (GameConstants.TILE_WIDTH - platformHero.colliderOffset.x);
 				heroVelocity.x = 0;
 			}
 		}
-		
+
 		if (heroVelocity.y > 0) {
 			if (rowMin >= 0 && rowMax <= GameConstants.GRID_ROWS - 1 && colMax <= GameConstants.GRID_COLS - 1 && colMaxOverlap == 0 &&
 				(isBlock(tileGrid[baseRow][baseCol + 1]) || isBlock(tileGrid[rowMin][baseCol + 1]) || isBlock(tileGrid[rowMax][baseCol + 1])) &&
 				(isBlockedBy(tileGrid[baseRow][colMax]) || 
-				(isBlockedBy(tileGrid[rowMin][colMax]) && platformHero.colliderMin.x < (tileGrid[rowMin][baseCol + 1].colliderMax.x * COLLIDER_PRECISION)) || 
-				(isBlockedBy(tileGrid[rowMax][colMax]) && platformHero.colliderMax.x > tileGrid[rowMax][baseCol + 1].colliderMin.x))) {
+				(isBlockedBy(tileGrid[rowMin][colMax]) && !compareLayer(tileGrid[rowMin][colMin], tileGrid[rowMin][colMax]) && platformHero.colliderMin.x < tileGrid[rowMin][baseCol + 1].colliderMax.x) || 
+				(isBlockedBy(tileGrid[rowMax][colMax]) && !compareLayer(tileGrid[rowMax][colMin], tileGrid[rowMax][colMax]) && platformHero.colliderMax.x > tileGrid[rowMax][baseCol + 1].colliderMin.x))) {
 				platformHero.y._ = (baseCol * GameConstants.TILE_HEIGHT) + (GameConstants.TILE_HEIGHT - platformHero.colliderOffset.y);
 				heroVelocity.y = 0;
 				isHeroGrounded = true;
-				
+
 				if (tileGrid[baseRow][baseCol + 1].tileLayer != 0) {
 					heroLayer = tileGrid[baseRow][baseCol + 1].tileLayer;
 				}
@@ -188,12 +194,9 @@ class HeroControl extends Component
 	}
 	
 	public function applyGravity(dt: Float): Void {
-		if(baseCol < GameConstants.GRID_COLS - 1) {
-			//if (!isHeroGrounded || 
-				//(rowMin > 0 && rowMax < GameConstants.GRID_ROWS - 1 && colMin > 0 && colMax < GameConstants.GRID_COLS - 1) &&
-				//(tileGrid[baseRow][baseCol + 1].tileLayer == 0 && tileGrid[rowMin][baseCol + 1].tileLayer == 0 && tileGrid[rowMax][baseCol + 1].tileLayer == 0)) {
-				heroVelocity.y += GameConstants.GRAVITY * dt;
-			//}
+		if (baseCol < GameConstants.GRID_COLS - 1) {
+			isHeroGrounded = false;
+			heroVelocity.y += GameConstants.GRAVITY * dt;
 		}
 	}
 	
@@ -312,7 +315,5 @@ class HeroControl extends Component
 		if (heroFallOutOfBounds() || hasCollidedWithObstacle(TileType.SPIKE_DOWN) || hasCollidedWithObstacle(TileType.SPIKE_UP)) {
 			PlatformMain.sharedInstance.playHeroDeathAnim();
 		}
-		
-		//Utils.consoleLog(heroVelocity.y);
 	}
 }
